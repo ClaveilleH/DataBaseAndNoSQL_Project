@@ -1,0 +1,79 @@
+\documentclass{rapportClass} % Classe de document (rapport)
+
+
+
+\title{Rapport de Projet}
+\author{Hugo CLAVEILLE, JULES Stevenson, DIALLO Mamadou Ougailou}
+% -- Master 1 Informatique
+\date{\today}
+
+
+
+
+% Appliquer aussi aux pages de type 'plain' (début de chapitre, sommaire…)
+\fancypagestyle{plain}{
+  \fancyhf{}
+  \fancyhead[L]{Rapport de Projet}
+  \fancyhead[C]{M2 SLCS}
+  \fancyhead[R]{BigData \& noSQL}
+  \fancyfoot[C]{\thepage}
+  \renewcommand{\headrulewidth}{0.4pt}
+}
+
+\begin{document}
+
+\begin{titlepage}
+    \thispagestyle{empty} % pas d'en-tête/pied ici
+    
+    \begin{center}
+        % Logo en haut
+        \includegraphics[width=1\textwidth]{assets/logo.png}\\[2cm]
+        
+        % Titre
+        {\Huge \textbf{Rapport de Projet}}\\[1cm]
+        {\Large BigData \& noSQL}\\[1cm]
+
+        \vspace{1cm}
+        % Auteur
+        \textbf{Hugo CLAVEILLE\\ JULES Stevenson\\ DIALLO Mamadou Ougailou}\\[0.5cm]
+        
+        % Sous-titre
+        {\Large Master 2 SLCD}\\[2cm]
+        
+        % Date
+        \vfill
+        {\large \today}
+    \end{center}
+\end{titlepage}
+
+\newpage
+\thispagestyle{empty}
+\tableofcontents
+\newpage
+
+% ======================================================================================================================
+\chapter{Introduction}
+Dans le cadre de l'Unité d'Enseignement de Software Engineering 2025, il nous a été demandé de réaliser un projet individuel
+visant à étudier et implémenter des méthodes de transmission optimisée de données.
+La transmission de tableaux d’entiers constitue un problème fondamental dans de nombreux systèmes
+informatiques et réseaux, en particulier pour les applications nécessitant un échange rapide et
+efficace de grandes quantités de données. Ce projet s’inscrit donc dans un contexte pratique où
+la performance et l’efficacité des transferts d’information sont essentielles.
+
+L’objectif est d’étudier différentes méthodes de compression de ces tableaux afin de réduire le nombre
+de bits transmis tout en conservant un accès direct à chaque élément. La méthode choisie, appelée Bit Packing,
+représente chaque entier avec le minimum de bits nécessaires, regroupé ensuite dans des entiers standards
+pour la transmission. Deux variantes seront explorées : une autorisant l’écriture d’un entier compressé sur
+deux entiers consécutifs, et une qui ne le permet pas. Le projet inclut également des benchmarks pour évaluer les gains de performance.
+
+La gestion des débordements (overflow) est un aspect crucial de ce projet. En effet, lorsque les entiers à compresser
+dépasse la capacité de bits allouée, il est nécessaire de mettre en place une stratégie efficace pour gérer ces cas.
+La méthode choisie consiste à utiliser des entiers supplémentaires pour stocker les valeurs qui ne peuvent pas être représentées
+dans le format compressé initial. Cette approche permet de maintenir l’intégrité des données tout en optimisant l’espace de stockage.
+
+
+
+
+
+
+\end{document}
