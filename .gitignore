@@ -1,6 +1,9 @@
+
+# Fichier des autres consignes
 docs/Project2_BookScope.pdf
 docs/Project3_UrbanFlow.pdf
 
+# Fichiers générés par LaTeX
 docs/rapport/rapport.aux
 docs/rapport/rapport.log
 docs/rapport/rapport.toc
