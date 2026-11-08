@@ -1,0 +1,103 @@
+{
+ "environment": {
+  "date": "2026-11-08 19:42:54",
+  "os": "Windows-11-10.0.26300-SP0",
+  "python": "3.13.6",
+  "cpu_threads": 8,
+  "docker": "29.2.1",
+  "docker_cpus": 8,
+  "docker_mem_gb": 7.6,
+  "server": {
+   "postgres": "PostgreSQL 17.2 (Debian 17.2-1.pgdg120+1)",
+   "shared_buffers": "256MB",
+   "work_mem": "4MB",
+   "parallel_workers": "2",
+   "citus": "Citus 13.0.3"
+  },
+  "workers": [
+   "w1",
+   "w2"
+  ]
+ },
+ "stopped_worker": "w2",
+ "station_on_stopped_worker": "GM000004199",
+ "station_on_other_worker": "GME00102169",
+ "steps": {
+  "avant_panne": {
+   "F1 station du worker arrêté": {
+    "command": "weatherscope.cli station GM000004199 --start 2015-01-01 --end 2024-12-31 --json",
+    "exit_code": 0,
+    "seconds": 2.32,
+    "stdout_sha256": "892f911a3e5f69f7",
+    "message": "(résultat complet affiché)"
+   },
+   "F1 autre station": {
+    "command": "weatherscope.cli station GME00102169 --start 2015-01-01 --end 2024-12-31 --json",
+    "exit_code": 0,
+    "seconds": 1.47,
+    "stdout_sha256": "cceaa2d0e99270c6",
+    "message": "(résultat complet affiché)"
+   },
+   "F3": {
+    "command": "weatherscope.cli anomalies -z GM -z SP --json",
+    "exit_code": 0,
+    "seconds": 66.89,
+    "stdout_sha256": "aa1d3d26236d3591",
+    "message": "(résultat complet affiché)"
+   }
+  },
+  "worker_arrete": {
+   "F1 station du worker arrêté": {
+    "command": "weatherscope.cli station GM000004199 --start 2015-01-01 --end 2024-12-31 --json",
+    "exit_code": 2,
+    "seconds": 5.02,
+    "stdout_sha256": "49ec472e9feed409",
+    "message": "ÉCHEC : la base ou une de ses instances est indisponible ; la requête n'a pas été exécutée en entier. Détail : connection to the remote node weatherscope@w2:5432 failed with the following error: could not translate host name \"w2\" to address: No address associated with hostname Aucun résultat partiel n'est affiché."
+   },
+   "F1 autre station": {
+    "command": "weatherscope.cli station GME00102169 --start 2015-01-01 --end 2024-12-31 --json",
+    "exit_code": 0,
+    "seconds": 0.91,
+    "stdout_sha256": "cceaa2d0e99270c6",
+    "message": "(résultat complet affiché)"
+   },
+   "F3": {
+    "command": "weatherscope.cli anomalies -z GM -z SP --json",
+    "exit_code": 2,
+    "seconds": 4.9,
+    "stdout_sha256": "49ec472e9feed409",
+    "message": "ÉCHEC : la base ou une de ses instances est indisponible ; la requête n'a pas été exécutée en entier. Détail : connection to the remote node weatherscope@w2:5432 failed with the following error: could not translate host name \"w2\" to address: No address associated with hostname Aucun résultat partiel n'est affiché."
+   }
+  },
+  "apres_redemarrage": {
+   "F1 station du worker arrêté": {
+    "command": "weatherscope.cli station GM000004199 --start 2015-01-01 --end 2024-12-31 --json",
+    "exit_code": 0,
+    "seconds": 2.19,
+    "stdout_sha256": "892f911a3e5f69f7",
+    "message": "(résultat complet affiché)"
+   },
+   "F1 autre station": {
+    "command": "weatherscope.cli station GME00102169 --start 2015-01-01 --end 2024-12-31 --json",
+    "exit_code": 0,
+    "seconds": 1.61,
+    "stdout_sha256": "cceaa2d0e99270c6",
+    "message": "(résultat complet affiché)"
+   },
+   "F3": {
+    "command": "weatherscope.cli anomalies -z GM -z SP --json",
+    "exit_code": 0,
+    "seconds": 64.65,
+    "stdout_sha256": "aa1d3d26236d3591",
+    "message": "(résultat complet affiché)"
+   }
+  }
+ },
+ "checks": {
+  "F1 sur le worker arrêté échoue explicitement (code 2)": true,
+  "F1 sur un autre worker répond normalement": true,
+  "F3 échoue explicitement (code 2)": true,
+  "aucun résultat partiel pour F1 et F3 pendant la panne": true,
+  "après redémarrage, F1 et F3 identiques à avant la panne": true
+ }
+}

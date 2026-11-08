@@ -27,13 +27,19 @@ PERIOD = ["--start", "2015-01-01", "--end", "2024-12-31"]
 
 
 def station_of(url: str, worker: str) -> str:
+    """Une station (avec TMAX récent) dont les mesures sont sur `worker`, d'après le placement réel des shards."""
     with connect(url) as conn, conn.cursor() as cur:
-        cur.execute("""SELECT s.id FROM stations s
-                       JOIN citus_shards cs ON cs.shardid = get_shard_id_for_distribution_column('observations', s.id)
-                       WHERE cs.table_name = 'observations'::regclass AND cs.nodename = %s
-                         AND EXISTS (SELECT 1 FROM observations o WHERE o.station = s.id AND o.element = 'TMAX'
-                                     AND o.date >= '2015-01-01') ORDER BY s.id OFFSET 5 LIMIT 1""", (worker,))
-        return cur.fetchone()[0]
+        cur.execute("SELECT shardid FROM citus_shards WHERE table_name = 'observations'::regclass AND nodename = %s",
+                    (worker,))
+        shards = {r[0] for r in cur.fetchall()}
+        cur.execute("SELECT id, get_shard_id_for_distribution_column('observations', id) FROM stations ORDER BY id")
+        ids = [sid for sid, shard in cur.fetchall() if shard in shards]
+        for sid in ids[5:]:
+            cur.execute("SELECT 1 FROM observations WHERE station = %s AND element = 'TMAX' AND date >= '2015-01-01' "
+                        "LIMIT 1", (sid,))
+            if cur.fetchone():
+                return sid
+    raise RuntimeError(f"aucune station utilisable sur {worker}")
 
 
 def run_cli(args: list[str]) -> dict:

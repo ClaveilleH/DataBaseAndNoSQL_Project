@@ -102,7 +102,7 @@ Le schéma est réparti par `sql/distribute.sql`, à exécuter après `sql/schem
 ```bash
 docker compose -f deploy/citus/compose.yml up -d     # coordinateur (port 5441) + workers w1, w2
 bash deploy/citus/init.sh                            # enregistre les workers, applique schema.sql et distribute.sql
-export DATABASE_URL=postgresql://weatherscope:weatherscope@localhost:5441/weatherscope
+export DATABASE_URL=postgresql://weatherscope:weatherscope@127.0.0.1:5441/weatherscope   # 127.0.0.1, pas localhost (voir ci-dessous)
 uv run python -m ingest.load                         # même chargement qu'en local (~20-60 min)
 bash deploy/citus/add_worker.sh                      # (Citus-3) ajoute w3 et rééquilibre les shards
 ```
@@ -111,6 +111,8 @@ bash deploy/citus/add_worker.sh                      # (Citus-3) ajoute w3 et r�
   (`citus.shard_replication_factor = 1`) : les observations sont réparties, pas copiées.
 - Budget mémoire : local = 2 Go de `shared_buffers` ; Citus-2 = 2 workers de 1 Go ; Citus-3 = 3 workers de 700 Mo
   (variable `WORKER_SHARED_BUFFERS`, fixée automatiquement par `bench.common.activate`).
+- **Windows :** utiliser `127.0.0.1` et non `localhost` dans `DATABASE_URL` : `localhost` essaie d'abord `::1` et met environ 200 s à se connecter
+  aux ports Docker (mesuré). Les scripts de `bench/` et les tests utilisent déjà `127.0.0.1`.
 - Un seul poste : les instances se partagent le processeur, la mémoire et le disque (voir le rapport).
 
 ### Tests et expériences

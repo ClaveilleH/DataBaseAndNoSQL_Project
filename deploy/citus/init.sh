@@ -31,4 +31,4 @@ fi
 echo "Tables réparties :"
 psql_coord -c "SELECT table_name, citus_table_type, distribution_column, colocation_id, shard_count
                FROM citus_tables ORDER BY colocation_id, table_name::text"
-echo "Coordinateur prêt : DATABASE_URL=postgresql://weatherscope:weatherscope@localhost:5441/weatherscope"
+echo "Coordinateur prêt : DATABASE_URL=postgresql://weatherscope:weatherscope@127.0.0.1:5441/weatherscope"

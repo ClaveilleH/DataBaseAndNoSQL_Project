@@ -22,10 +22,11 @@ ROOT = Path(__file__).resolve().parent.parent
 RESULTS = Path(__file__).resolve().parent / "results"
 LOCAL_COMPOSE = ["docker", "compose", "-f", str(ROOT / "deploy" / "local" / "compose.yml")]
 CITUS_COMPOSE = ["docker", "compose", "-f", str(ROOT / "deploy" / "citus" / "compose.yml"), "--profile", "citus3"]
+# 127.0.0.1 et non localhost : sur Windows, « localhost » tente d'abord ::1 et met ~200 s à se connecter aux ports Docker.
 URLS = {
-    "local": "postgresql://weatherscope:weatherscope@localhost:5440/weatherscope",
-    "citus2": "postgresql://weatherscope:weatherscope@localhost:5441/weatherscope",
-    "citus3": "postgresql://weatherscope:weatherscope@localhost:5441/weatherscope",
+    "local": "postgresql://weatherscope:weatherscope@127.0.0.1:5440/weatherscope",
+    "citus2": "postgresql://weatherscope:weatherscope@127.0.0.1:5441/weatherscope",
+    "citus3": "postgresql://weatherscope:weatherscope@127.0.0.1:5441/weatherscope",
 }
 WORKER_BUFFERS = {"citus2": "1GB", "citus3": "700MB"}
 WORKERS = {"citus2": ["w1", "w2"], "citus3": ["w1", "w2", "w3"]}

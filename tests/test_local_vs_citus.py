@@ -2,7 +2,7 @@
 
 Usage : uv run pytest tests/test_local_vs_citus.py -v
 Les deux bases doivent contenir les mêmes observations (même chargement) :
-  LOCAL_URL (défaut : localhost:5440) et CITUS_URL (défaut : coordinateur localhost:5441).
+  LOCAL_URL (défaut : 127.0.0.1:5440) et CITUS_URL (défaut : coordinateur 127.0.0.1:5441).
 Les résultats sont comparés après sérialisation JSON canonique (clés triées) ; les services
 renvoient déjà leurs listes dans un ordre canonique (égalités départagées par station puis date).
 Les cas couvrent des stations sur des workers différents et des zones qui s'étendent sur tous les workers.
@@ -21,8 +21,8 @@ from weatherscope.db import connect
 from weatherscope.services import f1_station, f2_episodes, f3_anomalies, f4_regional, trace
 from weatherscope.services.common import Area, tenths
 
-LOCAL_URL = os.environ.get("LOCAL_URL", "postgresql://weatherscope:weatherscope@localhost:5440/weatherscope")
-CITUS_URL = os.environ.get("CITUS_URL", "postgresql://weatherscope:weatherscope@localhost:5441/weatherscope")
+LOCAL_URL = os.environ.get("LOCAL_URL", "postgresql://weatherscope:weatherscope@127.0.0.1:5440/weatherscope")
+CITUS_URL = os.environ.get("CITUS_URL", "postgresql://weatherscope:weatherscope@127.0.0.1:5441/weatherscope")
 ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -52,12 +52,13 @@ def citus():
 def stations_by_worker(citus) -> dict[str, list[str]]:
     """Quelques stations de chaque worker (d'après le placement réel des shards)."""
     with citus.cursor() as cur:
-        cur.execute("""SELECT cs.nodename, s.id FROM stations s
-                       JOIN citus_shards cs ON cs.shardid = get_shard_id_for_distribution_column('observations', s.id)
-                       WHERE cs.table_name = 'observations'::regclass ORDER BY 1, 2""")
+        cur.execute("SELECT shardid, nodename FROM citus_shards WHERE table_name = 'observations'::regclass")
+        node_of = dict(cur.fetchall())
+        # La jointure directe avec la fonction n'est pas évaluée correctement par Citus : on associe en Python.
+        cur.execute("SELECT id, get_shard_id_for_distribution_column('observations', id) FROM stations ORDER BY id")
         out: dict[str, list[str]] = {}
-        for node, sid in cur.fetchall():
-            out.setdefault(node, []).append(sid)
+        for sid, shard in cur.fetchall():
+            out.setdefault(node_of[shard], []).append(sid)
     assert len(out) >= 2, "les observations doivent être réparties sur au moins 2 workers"
     return {node: ids[::max(1, len(ids) // 3)][:3] for node, ids in out.items()}
 
@@ -129,16 +130,23 @@ def test_trace_station_et_zone(local, citus):
                 trace.records(citus, zone="GM", element="TMAX", year=2021, month=7))
 
 
+def snapshot(conn) -> tuple:
+    """Lignes, somme des valeurs et taille de l'historique (deux requêtes : Citus refuse la sous-requête en liste)."""
+    with conn.cursor() as cur:
+        cur.execute("SELECT count(*), sum(value) FROM observations")
+        rows, total = cur.fetchone()
+        cur.execute("SELECT count(*) FROM observations_history")
+        history = cur.fetchone()[0]
+    conn.commit()  # Citus refuse de modifier `stations` dans une transaction qui a déjà lu une table répartie
+    return rows, total, history
+
+
 def test_f5_reimporter_un_lot_ne_change_rien(local, citus):
     """Réimporter un fichier déjà chargé : 0 nouvelle, 0 modifiée, archive inchangée, sur les deux déploiements."""
     files = [ROOT / "data" / "raw" / "by_station" / "SPE00120503.csv.gz"]
     for conn in (local, citus):
-        with conn.cursor() as cur:
-            cur.execute("SELECT count(*), sum(value), (SELECT count(*) FROM observations_history) FROM observations")
-            before = cur.fetchone()
+        before = snapshot(conn)
         counts = import_files(conn, files, (1991, 2024), log=lambda _: None)  # mêmes années que le chargement initial
-        with conn.cursor() as cur:
-            cur.execute("SELECT count(*), sum(value), (SELECT count(*) FROM observations_history) FROM observations")
-            after = cur.fetchone()
+        after = snapshot(conn)
         assert counts["inserted"] == 0 and counts["updated"] == 0 and counts["read"] > 0
         assert before == after
