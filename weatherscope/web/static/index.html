@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WeatherScope</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <h1>WeatherScope</h1>
+    <span class="sub">NOAA GHCN-Daily · Allemagne et Espagne</span>
+  </div>
+  <span id="db" class="badge">connexion…</span>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button role="tab" data-tab="f1" aria-selected="true">F1 Stations</button>
+  <button role="tab" data-tab="f2">F2 Épisodes</button>
+  <button role="tab" data-tab="f3">F3 Anomalies</button>
+  <button role="tab" data-tab="f4">F4 Événements</button>
+  <button role="tab" data-tab="trace">Traçabilité</button>
+</nav>
+
+<div id="error" class="error" hidden></div>
+
+<main>
+  <!-- F1 -->
+  <section id="f1" class="panel">
+    <div class="layout">
+      <aside class="side">
+        <form id="f1-search" class="form">
+          <label>Zone
+            <select name="zone"><option value="">Toutes</option><option value="GM">Allemagne (GM)</option><option value="SP">Espagne (SP)</option></select>
+          </label>
+          <label>Nom contient <input name="name" placeholder="ex. madrid"></label>
+          <label class="bbox">Rectangle (facultatif) <input name="bbox" placeholder="lat min,lat max,lon min,lon max"></label>
+          <button>Chercher</button>
+        </form>
+        <p class="note" id="f1-count"></p>
+        <div class="map" id="f1-map"></div>
+        <ul class="list" id="f1-list"></ul>
+      </aside>
+      <div class="content">
+        <form id="f1-summary" class="form inline">
+          <label>Station <input name="station" required placeholder="cliquer sur la carte ou la liste"></label>
+          <label>Début <input type="date" name="start" value="2022-01-01" required></label>
+          <label>Fin <input type="date" name="end" value="2022-12-31" required></label>
+          <button>Résumer</button>
+        </form>
+        <div id="f1-out" class="out"><p class="empty">Choisir une station pour voir son résumé mensuel : disponibilité, qualité, moyennes et cumuls.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- F2 -->
+  <section id="f2" class="panel" hidden>
+    <form id="f2-form" class="form inline">
+      <fieldset class="zones"><legend>Zone</legend>
+        <label><input type="checkbox" name="zone" value="GM"> GM</label>
+        <label><input type="checkbox" name="zone" value="SP" checked> SP</label>
+      </fieldset>
+      <label>Élément <select name="element"><option>TMAX</option><option>TMIN</option><option>PRCP</option></select></label>
+      <label>Seuil (°C ou mm) <input type="number" step="0.1" name="threshold" value="40" required></label>
+      <label>Durée min. (jours) <input type="number" name="min_days" value="3" min="1" required></label>
+      <label>Début <input type="date" name="start" value="2015-01-01" required></label>
+      <label>Fin <input type="date" name="end" value="2024-12-31" required></label>
+      <button>Chercher les épisodes</button>
+    </form>
+    <div class="layout">
+      <aside class="side"><div class="map" id="f2-map"></div><p class="note">Taille du point : nombre d'épisodes de la station.</p></aside>
+      <div class="content"><div id="f2-out" class="out"><p class="empty">Suites de jours consécutifs dont la valeur valide atteint le seuil. Un jour absent ou invalide coupe l'épisode.</p></div></div>
+    </div>
+  </section>
+
+  <!-- F3 -->
+  <section id="f3" class="panel" hidden>
+    <form id="f3-form" class="form inline">
+      <fieldset class="zones"><legend>Zone</legend>
+        <label><input type="checkbox" name="zone" value="GM" checked> GM</label>
+        <label><input type="checkbox" name="zone" value="SP" checked> SP</label>
+      </fieldset>
+      <label>Élément <select name="element"><option>TMAX</option><option>TMIN</option><option>PRCP</option></select></label>
+      <label>De <input type="number" name="first_year" value="2015" min="1991" max="2024"></label>
+      <label>À <input type="number" name="last_year" value="2024" min="1991" max="2024"></label>
+      <button>Classer les mois</button>
+    </form>
+    <div id="f3-out" class="out"><p class="empty">Écart de chaque mois à la normale 1991–2020, moyenné par maille de 0,5° puis entre mailles.</p></div>
+  </section>
+
+  <!-- F4 -->
+  <section id="f4" class="panel" hidden>
+    <form id="f4-form" class="form inline">
+      <fieldset class="zones"><legend>Zone</legend>
+        <label><input type="checkbox" name="zone" value="GM"> GM</label>
+        <label><input type="checkbox" name="zone" value="SP" checked> SP</label>
+      </fieldset>
+      <label>Élément <select name="element"><option>PRCP</option><option>TMAX</option><option>TMIN</option></select></label>
+      <label>Début <input type="date" name="start" value="2015-01-01" required></label>
+      <label>Fin <input type="date" name="end" value="2024-12-31" required></label>
+      <label>Quantile <input type="number" step="0.01" name="quantile" value="0.95" min="0.5" max="0.99"></label>
+      <label>Mailles min. <input type="number" name="min_cells" value="3" min="1"></label>
+      <label>Part min. <input type="number" step="0.05" name="min_share" value="0.25" min="0" max="1"></label>
+      <button>Chercher les événements</button>
+    </form>
+    <div class="layout">
+      <aside class="side"><div class="map" id="f4-map"></div><p class="note" id="f4-map-note">Choisir un événement pour voir ses stations.</p></aside>
+      <div class="content"><div id="f4-out" class="out"><p class="empty">Jour régional : au moins 3 mailles de 0,5° touchées et au moins 25 % des mailles qui rapportent. Les jours régionaux consécutifs forment un événement.</p></div></div>
+    </div>
+  </section>
+
+  <!-- Traçabilité -->
+  <section id="trace" class="panel" hidden>
+    <form id="trace-form" class="form inline">
+      <label>Station <input name="station" placeholder="ex. SPE00120503"></label>
+      <label>ou zone <select name="zone"><option value=""></option><option>GM</option><option>SP</option></select></label>
+      <label>Élément <select name="element"><option value="">tous</option><option>TMAX</option><option>TMIN</option><option>PRCP</option></select></label>
+      <label>Début <input type="date" name="start" required></label>
+      <label>Fin <input type="date" name="end" required></label>
+      <label class="check"><input type="checkbox" name="flagged_only"> seulement avec flag</label>
+      <button>Lister les observations</button>
+    </form>
+    <div id="trace-out" class="out"><p class="empty">Observations NOAA d'origine : valeur, flags et lot d'import. Les boutons « sources » des autres onglets remplissent ce formulaire.</p></div>
+  </section>
+</main>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

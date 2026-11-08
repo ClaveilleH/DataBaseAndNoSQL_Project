@@ -35,6 +35,7 @@ Statuts : **adoptée** (validée par l'équipe), **proposée** (à valider), **r
 | D25 | 2026-11-08 | Services vérifiés sur un cluster Citus de test : résultats identiques, panne explicite | Adoptée |
 | D26 | 2026-11-08 | Partie I mesurée : monthly_stats gardée, table large écartée | Adoptée |
 | D27 | 2026-11-09 | F3 et F4 réécrits pour le distribué : calculs par station sur les workers, seuils de F4 calculés une fois | Adoptée |
+| D28 | 2026-11-09 | Interface web en lecture seule (FastAPI + page HTML sans dépendance externe), branche `web` | Proposée |
 
 ---
 
@@ -348,4 +349,15 @@ Statuts : **adoptée** (validée par l'équipe), **proposée** (à valider), **r
 - **Gain (poste Linux, 16 threads, 13 Go ; base complète) :** F3 sur Citus-2 1,2 s → 0,3 s ; F4 Allemagne TMAX 22,6 s → 7,5 s en local et 7,8 s → 6,3 s sur Citus-2.
 - **Mesures refaites avec le code corrigé, sur ce poste :** E2 local, Citus-2, Citus-3 et E3 local, Citus-2, même protocole que l'équipe (`bench/results/*_correctif.json`). Les résultats de l'équipe (sans suffixe) sont gardés : ils montrent le problème. E1 et la panne ne dépendent pas de F3 et F4 corrigés et ne sont pas refaits.
 - **Pourquoi pas plus :** dans F4, les comptes par jour et par maille (17 Mo) restent fusionnés sur le coordinateur : les stations d'une maille sont réparties sur plusieurs workers par le hachage de la station. Une table de seuils tenue à jour par F5 supprimerait le calcul des quantiles (piste E4).
+
+## D28 — Interface web en lecture seule
+
+- **Statut :** proposée, 2026-11-09, sur la branche `web` (à fusionner si l'équipe la garde pour la démo). Code : `weatherscope/web/` ; tests : `tests/test_web.py`.
+- **Décision :** une API FastAPI (`/api/stations`, `/api/station/{id}`, `/api/episodes`, `/api/anomalies`, `/api/events`, `/api/trace`, `/api/info`) qui appelle les services existants, et une page HTML/CSS/JavaScript sans bibliothèque externe. Lancement : `uv run python -m weatherscope.web`.
+- **Pourquoi :** la ligne de commande suffit au sujet, mais une page rend la démo plus lisible : carte des stations, frise des anomalies, preuves de F4 sur la carte, et liens « sources » vers la traçabilité. FastAPI et uvicorn étaient déjà dans les dépendances. Aucune ressource externe (pas de fond de carte, pas de CDN) : la démo marche sans internet.
+- **Mêmes garanties que la CLI :** mêmes fonctions de service, donc mêmes résultats (vérifié : F2 et F3 de l'API identiques aux services) ; une connexion par requête ; si la base ou un worker manque, réponse 503 « ÉCHEC … Aucun résultat partiel n'est affiché », que la page affiche sans résultat.
+- **Écarté :**
+  - Streamlit : plus lourd et moins maîtrisable ;
+  - F5 dans le navigateur : il modifie la base, il reste en ligne de commande ;
+  - une carte avec fond (Leaflet, OpenStreetMap) : demande internet pendant la soutenance.
 

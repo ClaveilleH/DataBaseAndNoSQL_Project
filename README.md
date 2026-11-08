@@ -8,7 +8,7 @@ Projet M2 SLCD « Big Data and NoSQL » (sujet : `docs/Project1_WeatherScope.pdf
   - Référence pour les normales : 1991–2020.
 - **Base :** PostgreSQL 17.2 pour le prototype local (Partie I), et PostgreSQL + Citus 13.0 pour le prototype distribué (Partie II). Le code et le SQL sont les mêmes dans les deux cas.
 - **Interface :** une ligne de commande qui expose les services F1 à F5 et la traçabilité.
-- **Choix et justifications :** `docs/decisions.md`, décisions D1 à D22.
+- **Choix et justifications :** `docs/decisions.md`, décisions D1 à D28.
 
 ## Prérequis
 
@@ -79,6 +79,19 @@ Si la base ou un worker ne répond pas, la commande affiche « ÉCHEC » et ne m
   - fichiers acceptés : `by_station` ou `by_year` ; seules les stations GM et SP sont retenues, et une station inconnue est ajoutée d'après `ghcnd-stations.txt` ;
   - une valeur ou un flag modifié écrase l'ancienne version, qui est archivée dans `observations_history` ;
   - réimporter le même lot ne change rien, et un lot contradictoire est refusé.
+
+### Interface web (branche `web`)
+
+```bash
+uv run python -m weatherscope.web          # http://127.0.0.1:8050/  (API documentée : /api/docs)
+```
+
+Une page en lecture seule, avec un onglet par service : F1 (carte et liste des stations, résumé mensuel avec graphique), F2 (épisodes), F3 (frise des anomalies par zone), F4 (événements, preuves sur la carte) et traçabilité. Chaque résultat a un lien « sources » vers ses observations d'origine.
+
+- Elle appelle les mêmes services que la ligne de commande, sur la base de `DATABASE_URL` : local ou coordinateur Citus. L'en-tête de la page indique laquelle.
+- Si la base ou un worker ne répond pas, elle affiche « ÉCHEC » et aucun résultat partiel.
+- F5 (import) reste en ligne de commande : il modifie la base.
+- Aucune ressource externe : la carte est dessinée à partir des coordonnées des stations, et la page fonctionne sans internet.
 
 ## Vérification indépendante
 
