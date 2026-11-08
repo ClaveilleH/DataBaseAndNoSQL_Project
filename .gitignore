@@ -9,6 +9,15 @@ docs/rapport/rapport.log
 docs/rapport/rapport.toc
 docs/rapport/rapport.out
 docs/rapport/rapport.pdf
+docs/presentation/main.pdf
+docs/presentation/modele_beamer.zip
+docs/presentation/*.aux
+docs/presentation/*.log
+docs/presentation/*.nav
+docs/presentation/*.snm
+docs/presentation/*.out
+docs/presentation/*.toc
+docs/presentation/*.vrb
 # Python / uv
 .venv/
 __pycache__/
