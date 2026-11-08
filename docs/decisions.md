@@ -32,6 +32,8 @@ Statuts : **adoptée** (validée par l'équipe), **proposée** (à valider), **r
 | D22 | 2026-11-08 | Services F1 et F4, interface en ligne de commande, échec explicite | Adoptée |
 | D23 | 2026-11-08 | Longitudes de signe inversé : documentées, pas corrigées | Adoptée |
 | D24 | 2026-11-08 | Rapport : strict minimum, sections du sujet, parties distribuées à compléter | Adoptée |
+| D25 | 2026-11-08 | Services vérifiés sur un cluster Citus de test : résultats identiques, panne explicite | Adoptée |
+| D26 | 2026-11-08 | Partie I mesurée : monthly_stats gardée, table large écartée | Adoptée |
 
 ---
 
@@ -312,3 +314,21 @@ Statuts : **adoptée** (validée par l'équipe), **proposée** (à valider), **r
 - **Statut :** adoptée, 2026-11-08.
 - **Décision :** rapport LaTeX (`docs/rapport/`) réduit au strict minimum : ce que le sujet demande et nos choix, sans table des matières ni chapitres (chaque chapitre ouvrirait une page). Les parties distribuées et les mesures sont marquées en rouge « À compléter » pour Stevenson et Mamadou.
 - **Pourquoi :** 10 pages au maximum hors annexes ; demande d'Hugo.
+
+## D25 — Services vérifiés sur un cluster Citus de test
+
+- **Statut :** adoptée, 2026-11-08. Ne remplace pas le déploiement Citus de `deploy/citus/` (Stevenson, Mamadou) : c'est un test de compatibilité des services, sur un cluster jetable.
+- **Montage :** Citus 13.0, 1 coordinateur + 2 workers (conteneurs `citusdata/citus:13.0`), `sql/schema.sql` puis `sql/distribute.sql` ; même sous-ensemble chargé en local et en distribué : 65 stations (40 GM, 25 SP), 1991–2024, 1 825 253 observations, par `ingest/load.py` (local 55 s, Citus 40 s, chargements simultanés).
+- **Résultats identiques :** 12 commandes en `--json` (recherche, F1 ×2, F2 ×3 dont un rectangle et un cas PRCP 1991–2024, F3 ×3 dont PRCP et TMIN, F4 ×2, trace) donnent une sortie identique octet pour octet en local et en distribué.
+- **Instances contactées (`--explain`) :** F1 → `Task Count: 1`, un seul worker (w2), parcours de l'index de la clé primaire ; F3 → 32 tâches sur les workers, sous-plan distribué fusionné par le coordinateur.
+- **Perte d'une instance (w2 arrêté) :** F1 sur GM000001474 (stockée sur w2) : « ÉCHEC : la base ou une de ses instances est indisponible … connection to the remote node weatherscope@w2:5432 failed … Aucun résultat partiel n'est affiché », code 2 ; F1 sur GME00111503 (sur w1) : réponse normale ; F3 sur l'Allemagne : même échec explicite.
+- **Reste à faire par l'équipe distribuée :** chargement complet sur Citus, comparaison automatique à grande échelle, configuration à 3 workers, mesures.
+
+## D26 — Partie I : mesures, monthly_stats gardée, table large écartée
+
+- **Statut :** adoptée, 2026-11-08. Confirme D15. Script : `bench/partie1.py` (ajouté par Hugo, la Partie I faisant partie de ses services) ; résultats bruts : `bench/results/partie1.json`.
+- **Protocole :** base locale complète (PostgreSQL 17.2, `shared_buffers` 2 Go, 2 processus parallèles par requête au plus) ; 1 exécution d'échauffement puis 5 chronométrées (médiane) ; pour chaque comparaison, les deux versions renvoient exactement les mêmes lignes.
+- **F3 avec ou sans agrégats :** 0,59 s sur `monthly_stats` contre 5,81 s en recalculant les mois depuis `observations` (Allemagne + Espagne, TMAX, 2015–2024) → `monthly_stats` gardée (86 Mo).
+- **Table large (une ligne par station et par jour) :** 7,91 M lignes et 868 Mo contre 21,46 M lignes et 2 827 Mo ; construite en 119 s. F1 (une station, 10 ans) 0,016 s contre 0,010 s ; F2 (Espagne, TMAX >= 40 °C) 0,214 s contre 0,104 s ; amplitude TMAX − TMIN > 20 °C le même jour 0,27 s contre 2,04 s.
+- **Décision :** garder une ligne par mesure : les services lisent un élément à la fois, que la clé (station, élément, date) cible directement ; F5 reste simple (une ligne = une observation NOAA). La table large n'est meilleure que pour croiser plusieurs éléments d'un même jour, ce qu'aucun service ne fait. Sa taille 3,3 fois plus faible serait un argument si la base ne tenait plus en mémoire.
+- La table large a été supprimée de la base après la mesure ; `bench/partie1.py` la reconstruit.

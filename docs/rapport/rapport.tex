@@ -201,12 +201,36 @@ donneraient des résultats légèrement différents. L'import (F5) passe par \cm
 \cmd{INSERT \ldots{} ON CONFLICT DO UPDATE \ldots{} WHERE} la valeur change, ce qui rend l'import idempotent.
 Taille en base : 2,9~Go (table 1,6~Go, index 1,3~Go). Chargement complet : 19~min.
 
-\paragraph{Décision justifiée par une mesure.} \afaire{F3 sur \cmd{monthly\_stats} contre F3 recalculé sur
-\cmd{observations} : temps mesurés (médiane de 5 exécutions, cache chaud).}
+\paragraph{Mesures.} \cmd{bench/partie1.py}, base complète, médiane de 5 exécutions après une exécution
+d'échauffement (cache chaud) ; pour chaque comparaison, les deux versions renvoient exactement les mêmes lignes.
 
-\paragraph{Conception alternative.} Une ligne par station et par jour, une colonne par élément
-(\cmd{sql/alt\_wide.sql}) : moins de lignes, mais des flags répétés par colonne et un F5 plus compliqué.
-\afaire{taille et temps sur F1 et F2 pour les deux conceptions, et conclusion.}
+\paragraph{Décision justifiée par une mesure.} F3 (Allemagne et Espagne, TMAX, 2015--2024) prend 0,59~s sur
+\cmd{monthly\_stats} contre 5,81~s en recalculant les mois depuis \cmd{observations} : les agrégats mensuels,
+tenus à jour par F5, rendent F3 dix fois plus rapide pour 86~Mo de plus.
+
+\paragraph{Conception alternative.} Une ligne par station et par jour, une colonne par élément avec ses flags
+(\cmd{sql/alt\_wide.sql}), construite en 119~s à partir de \cmd{observations}.
+
+\begin{table}[H]
+\centering\small
+\begin{tabular}{lrr}
+\toprule
+ & Une ligne par mesure (retenu) & Une ligne par jour (alternative) \\
+\midrule
+Lignes / taille avec index & 21,46~M / 2\,827~Mo & 7,91~M / 868~Mo \\
+F1 : une station, 10 ans, 3 éléments & 0,010~s & 0,016~s \\
+F2 : épisodes TMAX $\ge$ 40~°C, Espagne, 10 ans & 0,104~s & 0,214~s \\
+TMAX $-$ TMIN $>$ 20~°C le même jour, Espagne, 10 ans & 2,04~s & 0,27~s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+La table large est 3,3 fois plus petite et 7 fois plus rapide quand une requête croise plusieurs éléments du même
+jour. Mais nos services lisent un élément à la fois : la clé (station, élément, date) mène directement aux bonnes
+lignes, alors que la table large lit toutes les colonnes de la station, d'où F1 et F2 1,5 à 2 fois plus lents.
+Elle compliquerait aussi F5 (une ligne porte trois observations, avec trois jeux de flags et trois historiques).
+Nous gardons donc une ligne par mesure ; la taille de la table large serait un argument si la base ne tenait plus
+en mémoire (E1).
 
 % ======================================================================================================================
 \section{Partie II -- Prototype distribué}
@@ -227,20 +251,28 @@ les épisodes de F2 (fenêtres découpées par station) et F5 se calculent enti�
 \paragraph{Instances contactées et combinaison.} Une requête sur une station (F1) est routée vers un seul shard
 (\cmd{Task Count: 1}). Une requête sur une zone (F2, F3, F4) s'exécute sur les 32 shards ; chaque worker renvoie
 des résultats partiels (épisodes complets pour F2, sommes et comptes pour F3 et F4) que le coordinateur fusionne.
-\afaire{extraits \cmd{EXPLAIN} (option \cmd{-{}-explain}) : requête étroite contre requête large.}
+Sur un cluster de test (65 stations), \cmd{-{}-explain} montre pour F1 \cmd{Task Count: 1} vers un seul worker
+avec un parcours de l'index de la clé primaire, et pour F3 32 tâches réparties sur les deux workers, dont le résultat
+est fusionné par le coordinateur. \afaire{extraits sur la base complète.}
 
 \paragraph{Équilibre et écritures.} \afaire{répartition des lignes et de la taille par worker (\cmd{citus\_shards}),
 temps du chargement distribué.}
 
-\paragraph{Résultats identiques.} \afaire{comparaison automatique local / distribué, tri canonique, requêtes
-couvrant plusieurs instances.}
+\paragraph{Résultats identiques.} Toutes les sorties \cmd{-{}-json} sont en ordre canonique (égalités départagées
+par station, date ou zone). Sur le même sous-ensemble chargé en local et sur Citus (65 stations, 1,83~M observations),
+12 requêtes couvrant tous les services, dont F2--F4 sur des zones réparties sur les deux workers, donnent des sorties
+identiques octet pour octet. \afaire{comparaison automatique sur les données complètes.}
 
 \paragraph{Configuration alternative.} 3 workers (\cmd{citus\_add\_node} puis rééquilibrage), même code.
 \afaire{mesures.}
 
 \paragraph{Perte d'une instance.} Les shards ne sont pas répliqués. Si un worker est arrêté, toute requête qui en a
 besoin échoue côté base, et l'interface affiche « ÉCHEC » avec la cause, sans aucun résultat partiel (code 2).
-\afaire{F1 sur une station du worker arrêté, puis F3 : sorties obtenues.}
+Essai sur le cluster de test, worker w2 arrêté : F1 sur GM000001474 (stockée sur w2) renvoie
+« ÉCHEC : la base ou une de ses instances est indisponible \ldots{} connection to the remote node w2 failed \ldots{}
+Aucun résultat partiel n'est affiché » ; F1 sur une station de w1 répond normalement ; F3 sur l'Allemagne échoue
+de la même façon, puisqu'il lui faut les deux workers. Rien n'est récupéré : les données de w2 sont indisponibles
+jusqu'à son redémarrage.
 Un système en production répliquerait chaque shard (ou chaque worker) pour continuer à répondre ;
 notre déploiement sur un seul poste ne le fait pas et n'est pas équivalent à un cluster de machines indépendantes.
 

@@ -1,0 +1,90 @@
+{
+ "runs": 5,
+ "cache": "chaud (1 exécution d'échauffement)",
+ "server": {
+  "version": "PostgreSQL 17.2 (Debian 17.2-1.pgdg120+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14) 12.2.0, 64-bit",
+  "shared_buffers": "2GB",
+  "parallel_workers": "2"
+ },
+ "f3": {
+  "monthly_stats": {
+   "median_s": 0.5895,
+   "min_s": 0.587,
+   "max_s": 0.5899,
+   "runs": 5
+  },
+  "observations": {
+   "median_s": 5.8122,
+   "min_s": 5.7881,
+   "max_s": 6.0129,
+   "runs": 5
+  },
+  "identical": true,
+  "rows": 240
+ },
+ "wide": {
+  "build_s": 119.1,
+  "size": {
+   "rows": 7912385,
+   "total_mb": 868,
+   "table_mb": 559,
+   "index_mb": 308
+  },
+  "long_size": {
+   "rows": 21133806,
+   "total_mb": 2827,
+   "table_mb": 1566,
+   "index_mb": 1260
+  },
+  "queries": {
+   "F1 : résumé mensuel d'une station sur 10 ans (3 éléments)": {
+    "long": {
+     "median_s": 0.0103,
+     "min_s": 0.0102,
+     "max_s": 0.0105,
+     "runs": 5
+    },
+    "wide": {
+     "median_s": 0.0159,
+     "min_s": 0.0157,
+     "max_s": 0.0164,
+     "runs": 5
+    },
+    "identical": true,
+    "rows": 358
+   },
+   "F2 : épisodes TMAX >= 40 °C en Espagne, 2015-2024": {
+    "long": {
+     "median_s": 0.1044,
+     "min_s": 0.1039,
+     "max_s": 0.1058,
+     "runs": 5
+    },
+    "wide": {
+     "median_s": 0.2139,
+     "min_s": 0.2132,
+     "max_s": 0.2171,
+     "runs": 5
+    },
+    "identical": true,
+    "rows": 220
+   },
+   "Amplitude TMAX - TMIN > 20 °C le même jour, Espagne 2015-2024 (par station)": {
+    "long": {
+     "median_s": 2.0371,
+     "min_s": 1.9641,
+     "max_s": 2.0684,
+     "runs": 5
+    },
+    "wide": {
+     "median_s": 0.2743,
+     "min_s": 0.2736,
+     "max_s": 0.2807,
+     "runs": 5
+    },
+    "identical": true,
+    "rows": 131
+   }
+  }
+ }
+}
