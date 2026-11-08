@@ -9,3 +9,14 @@ docs/rapport/rapport.log
 docs/rapport/rapport.toc
 docs/rapport/rapport.out
 docs/rapport/rapport.pdf
+# Python / uv
+.venv/
+__pycache__/
+*.pyc
+
+# Données NOAA : seuls les fichiers de métadonnées sont versionnés ; bases exclues
+data/raw/*
+!data/raw/ghcnd-stations.txt
+!data/raw/ghcnd-inventory.txt
+!data/raw/ghcnd-countries.txt
+data/db/

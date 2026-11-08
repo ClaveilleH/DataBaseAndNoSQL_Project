@@ -1,0 +1,15 @@
+# Partie I : un seul serveur PostgreSQL local, même version que Citus (17.2).
+# La mémoire est bornée pour comparer local et distribué à budget comparable.
+name: weatherscope-local
+services:
+  postgres:
+    image: postgres:17.2
+    command: ["postgres", "-c", "shared_buffers=2GB"]
+    environment:
+      POSTGRES_USER: weatherscope
+      POSTGRES_PASSWORD: weatherscope
+      POSTGRES_DB: weatherscope
+    ports:
+      - "5440:5432"
+    volumes:
+      - ../../data/db/local:/var/lib/postgresql/data

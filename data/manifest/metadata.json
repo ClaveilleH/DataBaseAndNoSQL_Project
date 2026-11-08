@@ -1,0 +1,49 @@
+{
+  "zones": {
+    "GM": "Allemagne",
+    "SP": "Espagne"
+  },
+  "study": [
+    2015,
+    2024
+  ],
+  "baseline": [
+    1991,
+    2020
+  ],
+  "files": [
+    {
+      "url": "https://www.ncei.noaa.gov/pub/data/ghcn/daily/ghcnd-stations.txt",
+      "path": "data/raw/ghcnd-stations.txt",
+      "retrieved_at": "2026-11-07T13:20:08+00:00",
+      "size": 11441526,
+      "sha256": "437ee87f0343bcad408a492cf7a02163fb69255364c541b4006d5d76055d0dc3"
+    },
+    {
+      "url": "https://www.ncei.noaa.gov/pub/data/ghcn/daily/ghcnd-inventory.txt",
+      "path": "data/raw/ghcnd-inventory.txt",
+      "retrieved_at": "2026-11-07T13:20:11+00:00",
+      "size": 36402100,
+      "sha256": "3d7378c3ecad6841340b47392f10b391c42a5f47369765e6bb032704d2301125"
+    },
+    {
+      "url": "https://www.ncei.noaa.gov/pub/data/ghcn/daily/ghcnd-countries.txt",
+      "path": "data/raw/ghcnd-countries.txt",
+      "retrieved_at": "2026-11-07T13:20:12+00:00",
+      "size": 3659,
+      "sha256": "dfc325c0f89cc6f95e03ed5d4155a78b644ad28b044017c76fcb709df104df7f"
+    }
+  ],
+  "stations": {
+    "GM": {
+      "selected": 589,
+      "full_study": 558,
+      "baseline_tmax": 320
+    },
+    "SP": {
+      "selected": 185,
+      "full_study": 176,
+      "baseline_tmax": 98
+    }
+  }
+}
