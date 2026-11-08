@@ -9,7 +9,7 @@ Définition (D17) :
   un jour absent, invalide (qflag) ou sous le seuil coupe l'épisode ; les dates sont continues,
   donc un épisode du 30 décembre au 2 janvier est un seul épisode ;
 - seuls les jours de la période [start, end] sont considérés (un épisode est tronqué aux bornes) ;
-- intensité : dépassement moyen au-dessus du seuil (dixièmes) et valeur maximale.
+- intensité : dépassement moyen au-dessus du seuil et valeur maximale, en °C ou mm.
 Tri canonique : station, date de début.
 """
 
@@ -18,19 +18,20 @@ import json
 from datetime import date, timedelta
 from fractions import Fraction
 
-from verify.noaa import records, round2, stations
+from verify.noaa import records, round2, stations, valid
 
 
 def episodes(station: str, element: str, start: date, end: date, threshold: int, min_days: int) -> list[dict]:
-    days = [(d, v) for d, v, _m, q, _s in records(station, element, start, end) if q is None and v >= threshold]
+    days = [(d, v) for d, v, m, q, _s in records(station, element, start, end) if valid(m, q) and v >= threshold]
     found, run = [], []
     for d, v in days + [(None, None)]:  # sentinelle pour fermer le dernier épisode
         if run and (d is None or d - run[-1][0] != timedelta(days=1)):
             if len(run) >= min_days:
-                excess = Fraction(sum(x - threshold for _, x in run), len(run))
+                # Unités physiques (°C ou mm), comme la sortie du service F2.
+                excess = Fraction(sum(x - threshold for _, x in run), len(run) * 10)
                 found.append({
                     "station": station, "start": run[0][0].isoformat(), "end": run[-1][0].isoformat(),
-                    "days": len(run), "mean_excess": round2(excess), "max_value": max(x for _, x in run),
+                    "days": len(run), "mean_excess": round2(excess), "max_value": max(x for _, x in run) / 10,
                 })
             run = []
         if d is not None:

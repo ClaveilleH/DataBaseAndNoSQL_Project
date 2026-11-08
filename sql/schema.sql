@@ -83,9 +83,10 @@ CREATE TABLE monthly_stats (
     year        smallint NOT NULL,
     month       smallint NOT NULL CHECK (month BETWEEN 1 AND 12),
     n_obs       integer NOT NULL,                -- lignes présentes, valides ou non
-    n_valid     integer NOT NULL,                -- qflag vide
+    n_valid     integer NOT NULL,                -- valides : qflag vide et mflag différent de P (D20)
     n_flagged   integer NOT NULL,                -- qflag non vide (exclues)
-    n_pt        integer NOT NULL,                -- PRCP valides avec mflag P ou T (comptées à part)
+    n_presumed  integer NOT NULL,                -- PRCP mflag P (manquante présumée nulle) : traitées comme manquantes
+    n_trace     integer NOT NULL,                -- PRCP mflag T (trace) : valides, 0 mm, comptées à part
     sum_value   bigint,                          -- somme des valeurs valides (NULL si n_valid = 0)
     min_value   integer,
     max_value   integer,

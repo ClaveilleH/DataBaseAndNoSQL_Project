@@ -24,8 +24,12 @@ Statuts : **adoptée** (validée par l'équipe), **proposée** (à valider), **r
 | D14 | 2026-11-08 | Distribution Citus : répartition par station, `stations` en table de référence | Adoptée |
 | D15 | 2026-11-08 | Modèle de données relationnel : une ligne par mesure, valeurs entières | Adoptée |
 | D16 | 2026-11-08 | Données chargées : 1991–2024, un seul chemin d'import pour le chargement initial et F5 | Adoptée |
-| D17 | 2026-11-08 | Définitions de F2 et F3, arrondi, vérification indépendante | Proposée |
+| D17 | 2026-11-08 | Définitions de F2 et F3, arrondi, vérification indépendante | Adoptée |
 | D18 | 2026-11-08 | E3 : local contre Citus-2, charges et prédiction | Adoptée |
+| D19 | 2026-11-08 | Réorganisation : Hugo reprend les services, Stevenson et Mamadou gardent distribué et expériences | Adoptée |
+| D20 | 2026-11-08 | Pluie : T compté 0 mm valide, P traité comme manquant | Adoptée |
+| D21 | 2026-11-08 | F5 : tout extrait NOAA réel, nouvelles stations ajoutées, lot contradictoire refusé | Adoptée |
+| D22 | 2026-11-08 | Services F1 et F4, interface en ligne de commande, échec explicite | Adoptée |
 
 ---
 
@@ -218,7 +222,7 @@ Statuts : **adoptée** (validée par l'équipe), **proposée** (à valider), **r
 
 ## D17 — Définitions de F2 et F3, vérification indépendante
 
-- **Statut :** proposée, 2026-11-08 (à confirmer par Stevenson, qui implémente F2 et F3). Référence exécutable : `verify/f2_episodes.py`, `verify/f3_anomalies.py`.
+- **Statut :** adoptée, 2026-11-08 (proposée le même jour ; implémentée dans `weatherscope/services/`, voir D22). Référence exécutable : `verify/f2_episodes.py`, `verify/f3_anomalies.py`.
 - **F2 (épisodes) :**
   - critère choisi par l'utilisateur : élément, seuil en dixièmes (valeur >= seuil), durée minimale ;
   - un jour compte s'il a une observation sans `qflag` qui dépasse le seuil ; tout jour absent, invalide ou sous le seuil coupe l'épisode ;
@@ -235,7 +239,7 @@ Statuts : **adoptée** (validée par l'équipe), **proposée** (à valider), **r
   - F2, Espagne, TMAX >= 40,0 °C pendant au moins 3 jours, 2015–2024 : 220 épisodes, identiques en SQL. Le plus long : SPE00120503, du 7 au 17 juillet 2022 (11 jours) ;
   - F2, Allemagne, PRCP >= 5,0 mm pendant au moins 3 jours : 17 340 épisodes, dont 114 à cheval sur deux années, chacun compté une seule fois (par ex. GM000004155, du 29 décembre 2018 au 14 janvier 2019) ;
   - F3, Allemagne, TMAX, 2015–2024 : 120 mois classés, les 8 premiers identiques en SQL sur `monthly_stats` (décembre 2015 +5,16 °C, septembre 2023 +4,79 °C, février 2024 +4,72 °C, juin 2019 +4,64 °C…).
-- **Reste à faire :** F3 sur PRCP (il faudra séparer P et T, aujourd'hui comptés ensemble dans `monthly_stats.n_pt`) ; F4 ; une comparaison automatique entre la sortie des services et celle des scripts, une fois les services écrits.
+- **Complété le 2026-11-08 :** F3 accepte PRCP (moyenne journalière, mm/jour, voir D20) ; `verify/compare.py` compare automatiquement services et scripts (voir D22).
 
 ## D18 — E3 : configurations, charges et prédiction
 
@@ -246,3 +250,49 @@ Statuts : **adoptée** (validée par l'équipe), **proposée** (à valider), **r
   - séries de 200 requêtes avec graine fixe et une part de régionales de 0, 1, 5, 25, 50 et 100 % ; 5 répétitions après échauffement.
 - **Prédiction :** le local gagne sur la routine seule (surcoût fixe du coordinateur) ; Citus-2 gagne sur les études régionales grâce à F2 ; dans un mélange, le basculement se fait vers 1 à 5 % de régionales, car elles dominent le temps total.
 - **Pourquoi ces deux configurations :** ce sont celles où l'écart attendu est le plus net et le plus facile à expliquer ; la configuration à 3 workers sur le même poste ajoute surtout de la concurrence pour le processeur et la mémoire, et sera mesurée dans E2.
+
+## D19 — Réorganisation de l'équipe
+
+- **Statut :** adoptée, 2026-11-08. Modifie D12.
+- **Décision :** Stevenson et Mamadou ne répondent pas le jour du rendu. Hugo reprend les services F1–F4, l'interface et la traçabilité, en plus des données et de F5. Le prototype distribué (`deploy/citus/`) et les expériences E1–E4 (`bench/`) restent à Stevenson et Mamadou.
+- **Pourquoi :** les services bloquent tout le reste (comparaison local/distribué, mesures, démonstration) ; ils dépendent directement du modèle et des définitions déjà fixés par Hugo.
+
+## D20 — Pluie : traces (T) et manquantes présumées nulles (P)
+
+- **Statut :** adoptée, 2026-11-08. Précise D9.
+- **Constat (base locale, 1991–2024) :** aucune pluie marquée P ; 267 marquées T, toutes en Espagne, toutes à 0. Les autres marqueurs présents sont B (18 638 lignes, cumul de deux relevés de 12 h) et D (12 692 lignes, cumul de quatre relevés de 6 h), qui sont de vraies mesures.
+- **Décision :**
+  - T (trace, moins de 0,1 mm mesurable) : observation valide, comptée 0 mm, et comptée à part (`n_trace`) ;
+  - P (manquante, présumée nulle) : traitée comme manquante, jamais comme un zéro mesuré ; comptée à part (`n_presumed`) ;
+  - B et D : valeurs valides ordinaires ;
+  - observation valide = `qflag` vide et `mflag` différent de P ; c'est la même règle dans les services, `monthly_stats` et la vérification indépendante.
+- **Pourquoi :** une trace est une observation réelle d'une pluie négligeable, donc 0 mm est la valeur la plus juste ; P n'est pas une mesure, la compter comme 0 ferait baisser les moyennes et pourrait couper ou créer des épisodes à tort. Le sujet interdit d'utiliser P ou T comme des zéros ordinaires sans justification.
+- **Changement de schéma :** `monthly_stats.n_pt` est remplacée par `n_presumed` et `n_trace` (base locale modifiée par `ALTER TABLE`, sans recalcul puisqu'il n'y a aucune P).
+
+## D21 — F5 : extraits NOAA quelconques, nouvelles stations, lots contradictoires
+
+- **Statut :** adoptée, 2026-11-08. Complète D10 et D16.
+- **Décision :** `ingest/load.py` (et la commande `import`) accepte tout fichier CSV GHCN-Daily réel, `by_station` ou `by_year`, compressé ou non :
+  - seules les lignes TMAX/TMIN/PRCP des stations GM et SP sont retenues, les autres pays sont comptés et ignorés ;
+  - une station GM/SP absente de la base est ajoutée d'après `ghcnd-stations.txt` (le sujet cite « un ensemble de stations exclues du chargement initial ») ;
+  - sans fichier : chargement initial 1991–2024 ; avec des fichiers : toutes les années (pour importer 2025, par exemple), sauf option `--years` ;
+  - un doublon exact dans un lot est écrit une fois ; deux versions différentes d'une même observation dans un lot font échouer le paquet, l'erreur est notée dans `batches` et la base reste inchangée ;
+  - les mois touchés pour `monthly_stats` sont déduits des lignes écrites, et plus du nom des fichiers (un fichier `by_year` contient toutes les stations).
+- **Pourquoi :** à la soutenance, le jury peut fournir un extrait NOAA à importer ; il doit passer quel que soit son format ou ses stations.
+- **Vérifié le 2026-11-08 (base jetable) :** fichier `by_year` 2025 complet (166 Mo, 19,6 M lignes, tous pays) : 697 993 lignes GM/SP importées en 35 s, 18,9 M ignorées ; réimport : 0 nouvelle, 0 modifiée. Station hors sélection GM000002698 (Karlsruhe, 1876–2008) : ajoutée avec ses 144 883 observations. Lot contradictoire : refusé, valeur existante intacte.
+
+## D22 — Services F1 et F4, interface, échec explicite
+
+- **Statut :** adoptée, 2026-11-08. Code : `weatherscope/services/`, `weatherscope/cli.py`.
+- **Interface :** ligne de commande (`uv run python -m weatherscope.cli`) : `stations`, `station` (F1), `episodes` (F2), `anomalies` (F3), `events` (F4), `trace`, `import` (F5). Option `--json` (résultat complet, ordre canonique) et `--explain` (plan d'exécution, qui montre en distribué les tâches et les workers contactés).
+- **F1 :** recherche par zone ou rectangle et par nom ; pour une station et un intervalle, résumé mensuel par élément : jours attendus, présents, valides, invalides, traces, présumées nulles, disponibilité, moyenne (températures) ou cumul (pluie), min, max.
+- **F4 :**
+  - jour inhabituel pour une station : valeur valide au-dessus de son quantile 95 % pour ce mois calendaire sur 1991–2020 (au moins 80 % des jours de référence) ;
+  - on compte des mailles de 0,5° et non des stations, car la densité n'est pas uniforme ; jour régional : au moins 3 mailles touchées et au moins 25 % des mailles qui rapportent ce jour-là ;
+  - les jours régionaux consécutifs forment un événement ; sévérité = somme des parts de mailles touchées ; extrême isolé = une seule maille touchée ;
+  - preuves : chaque observation inhabituelle (station, date, valeur, seuil, maille).
+- **Traçabilité :** chaque résultat porte un champ `sources` utilisable avec `trace` ; F4 contient directement ses preuves.
+- **Échec explicite :** si la base ou un worker ne répond pas, la commande affiche « ÉCHEC », la cause, et aucun résultat partiel (code de sortie 2).
+- **Vérifié le 2026-11-08 (base locale complète) :** F1 0,5 s ; F2 (Espagne, 10 ans) 0,8 s ; F3 (2 pays) 1 s ; F4 (Allemagne, 10 ans) 29 s, dont l'essentiel pour calculer les quantiles de référence. `verify/compare.py` : 4 cas (F2 TMAX Espagne, F2 PRCP Allemagne avec 16 126 épisodes, F3 TMAX Allemagne, F3 PRCP Espagne) identiques aux scripts indépendants, classements compris.
+- **Exemples :** F4 Allemagne 2015–2024 : 166 événements ; le plus sévère du 1er au 12 novembre 2015 (pic le 8, 98 % des mailles) ; 185 jours d'extrême isolé, souvent à GM000004155 (Zugspitze, 2 964 m).
+- **Piste (E4) :** F4 recalcule les quantiles de référence à chaque requête ; une table de seuils tenue à jour par F5 les rendrait instantanés.

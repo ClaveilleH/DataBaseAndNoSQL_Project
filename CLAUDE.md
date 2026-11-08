@@ -2,7 +2,7 @@
 
 Projet M2 SLCD « Big Data and NoSQL » (sujet : `docs/Projet1_WeatherScope_FR.pdf`, la version anglaise fait foi).
 Observatoire météo historique sur NOAA GHCN-Daily : services F1–F5, version locale puis distribuée, expériences E1–E4.
-Équipe : Hugo (données), Stevenson (services), Mamadou (distribution et mesures). Rendu le 8 novembre 2026, soutenance le 10.
+Équipe : Hugo (données et services), Stevenson et Mamadou (distribution et mesures), voir D19. Rendu le 8 novembre 2026, soutenance le 10.
 
 Toutes les décisions et leurs raisons : `docs/decisions.md`.
 
@@ -32,8 +32,8 @@ Toute modification de ce fichier, de `weatherscope/db.py` ou du schéma SQL (le 
 | --- | --- | --- |
 | `ingest/` | Hugo | Téléchargement NOAA, manifeste (URL, date, SHA-256), parsing, chargement (`COPY`), F5 |
 | `verify/` | Hugo | Vérification indépendante : relit les CSV NOAA, sans la base |
-| `weatherscope/services/`, `weatherscope/cli.py` | Stevenson | F1–F4, traçabilité, CLI typer |
-| `deploy/`, `bench/`, `tests/` | Mamadou | Docker, Citus, comparaison local/distribué, panne, E1–E4 |
+| `weatherscope/services/`, `weatherscope/cli.py` | Hugo (D19) | F1–F4, traçabilité, CLI typer |
+| `deploy/`, `bench/`, `tests/` | Stevenson, Mamadou | Docker, Citus, comparaison local/distribué, panne, E1–E4 |
 | `weatherscope/db.py`, `sql/`, `CLAUDE.md` | Tous | Contrat commun |
 | `docs/rapport/` | Tous (Hugo assemble) | Rapport LaTeX |
 
@@ -52,8 +52,8 @@ Schéma : `sql/schema.sql` (local et distribué), puis `sql/distribute.sql` (Cit
 ## Règles de données (ne pas déroger sans le noter dans `docs/decisions.md`)
 
 - Uniquement des observations NOAA réelles : ne rien fabriquer, ne rien dupliquer.
-- `qflag` non vide = observation invalide : stockée et comptée, mais exclue des calculs.
-- PRCP avec `mflag` `P` (manquante présumée nulle) ou `T` (trace) : jamais traitée comme un zéro ordinaire. Le choix fait est documenté.
+- Observation valide = `qflag` vide et `mflag` différent de `P`. Une invalide est stockée et comptée, mais exclue des calculs.
+- PRCP `T` (trace) : valide, 0 mm, comptée à part (`n_trace`). PRCP `P` (manquante présumée nulle) : traitée comme manquante (`n_presumed`). Voir D20.
 - F2 : un jour manquant ou invalide coupe un épisode. Les épisodes sont calculés sur des dates continues : un épisode décembre–janvier reste un seul épisode.
 - Traçabilité : chaque résultat de service renvoie de quoi lister ses observations sources (station, date, élément, valeur, flags).
 - F5 : importer deux fois le même lot laisse l'archive inchangée. Une valeur ou un flag différent pour une observation existante écrase la valeur et archive l'ancienne dans une table d'historique.
@@ -66,7 +66,10 @@ uv sync                                           # dépendances
 docker compose -f deploy/local/compose.yml up -d  # PostgreSQL local, port 5440
 docker exec -i weatherscope-local-postgres-1 psql -U weatherscope -d weatherscope < sql/schema.sql  # schéma (base vide)
 uv run python ingest/download.py                  # fichiers by_station des 774 stations -> data/raw/by_station/
-uv run python -m ingest.load                      # import (initial ou F5), idempotent ; fichiers en argument possibles
+uv run python -m ingest.load                      # chargement initial 1991-2024, idempotent
+uv run python -m weatherscope.cli --help          # services : stations, station (F1), episodes (F2), anomalies (F3),
+                                                  #   events (F4), trace, import (F5) ; --json, --explain
+uv run python -m verify.compare                   # services contre vérification indépendante (doit afficher OK)
 uv run python -m verify.f2_episodes --zone SP --start 2015-01-01 --end 2024-12-31 --threshold 400 --min-days 3
 uv run python -m verify.f3_anomalies --zone GM --years 2015 2024   # vérification indépendante (fichiers NOAA, sans base)
 uv run pytest                                     # tests

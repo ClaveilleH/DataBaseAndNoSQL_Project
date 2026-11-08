@@ -41,6 +41,11 @@ def records(station: str, element: str, start: date, end: date) -> Iterator[tupl
                        mflag or None, qflag or None, sflag or None)
 
 
+def valid(mflag: str | None, qflag: str | None) -> bool:
+    """Observation utilisable : pas de qflag, et pas de mflag P (pluie manquante présumée nulle, D20)."""
+    return qflag is None and mflag != "P"
+
+
 def round2(x: Fraction) -> float:
     """Arrondi à 2 décimales, moitié loin de zéro, comme round(numeric, 2) de PostgreSQL.
 

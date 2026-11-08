@@ -1,0 +1,36 @@
+[
+ {
+  "case": "F2 SP TMAX >= 40.0 pendant 3 j, 2015-01-01..2024-12-31",
+  "identical": true,
+  "service_rows": 220,
+  "independent_rows": 220,
+  "only_service": [],
+  "only_independent": []
+ },
+ {
+  "case": "F2 GM PRCP >= 10.0 pendant 2 j, 2015-01-01..2024-12-31",
+  "identical": true,
+  "service_rows": 16126,
+  "independent_rows": 16126,
+  "only_service": [],
+  "only_independent": []
+ },
+ {
+  "case": "F3 GM TMAX 2015..2024",
+  "identical": true,
+  "service_rows": 120,
+  "independent_rows": 120,
+  "only_service": [],
+  "only_independent": [],
+  "same_ranking": true
+ },
+ {
+  "case": "F3 SP PRCP 2015..2024",
+  "identical": true,
+  "service_rows": 120,
+  "independent_rows": 120,
+  "only_service": [],
+  "only_independent": [],
+  "same_ranking": true
+ }
+]
