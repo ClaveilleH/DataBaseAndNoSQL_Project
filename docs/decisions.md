@@ -30,6 +30,8 @@ Statuts : **adoptée** (validée par l'équipe), **proposée** (à valider), **r
 | D20 | 2026-11-08 | Pluie : T compté 0 mm valide, P traité comme manquant | Adoptée |
 | D21 | 2026-11-08 | F5 : tout extrait NOAA réel, nouvelles stations ajoutées, lot contradictoire refusé | Adoptée |
 | D22 | 2026-11-08 | Services F1 et F4, interface en ligne de commande, échec explicite | Adoptée |
+| D23 | 2026-11-08 | Longitudes de signe inversé : documentées, pas corrigées | Adoptée |
+| D24 | 2026-11-08 | Rapport : strict minimum, sections du sujet, parties distribuées à compléter | Adoptée |
 
 ---
 
@@ -296,3 +298,17 @@ Statuts : **adoptée** (validée par l'équipe), **proposée** (à valider), **r
 - **Vérifié le 2026-11-08 (base locale complète) :** F1 0,5 s ; F2 (Espagne, 10 ans) 0,8 s ; F3 (2 pays) 1 s ; F4 (Allemagne, 10 ans) 29 s, dont l'essentiel pour calculer les quantiles de référence. `verify/compare.py` : 4 cas (F2 TMAX Espagne, F2 PRCP Allemagne avec 16 126 épisodes, F3 TMAX Allemagne, F3 PRCP Espagne) identiques aux scripts indépendants, classements compris.
 - **Exemples :** F4 Allemagne 2015–2024 : 166 événements ; le plus sévère du 1er au 12 novembre 2015 (pic le 8, 98 % des mailles) ; 185 jours d'extrême isolé, souvent à GM000004155 (Zugspitze, 2 964 m).
 - **Piste (E4) :** F4 recalcule les quantiles de référence à chaque requête ; une table de seuils tenue à jour par F5 les rendrait instantanés.
+
+## D23 — Longitudes de signe inversé dans les métadonnées NOAA
+
+- **Statut :** adoptée, 2026-11-08.
+- **Constat :** 9 stations espagnoles retenues ont une longitude positive alors qu'elles sont à l'ouest de Greenwich : SPE00120008 et SPE00119999 (Castellón), SPE00120161 (Huesca), SP000008416 et SPE00120584 (Valence), SPE00101043 et SPE00101035 (Alicante), SP000007038 (Torrevieja), SPE00120341 (Murcie/San Javier). Pour 3 d'entre elles, la même station existe sous un autre identifiant avec le bon signe (par ex. SPE00101035 à +0,5706 et SPM00008360 à −0,558 pour l'aéroport d'Alicante).
+- **Décision :** garder les métadonnées NOAA telles quelles et documenter l'anomalie (annexe du rapport, limites).
+- **Pourquoi :** corriger à la main reviendrait à modifier la source sans pouvoir le vérifier pour toutes les stations ; l'effet se limite à l'affectation de 9 stations à une maille de 0,5° voisine (F3, F4) et aux recherches par rectangle (F1).
+- **Alternative écartée :** table de corrections manuelles (risque d'erreur, non vérifiable par le correcteur dans les fichiers NOAA).
+
+## D24 — Rapport
+
+- **Statut :** adoptée, 2026-11-08.
+- **Décision :** rapport LaTeX (`docs/rapport/`) réduit au strict minimum : ce que le sujet demande et nos choix, sans table des matières ni chapitres (chaque chapitre ouvrirait une page). Les parties distribuées et les mesures sont marquées en rouge « À compléter » pour Stevenson et Mamadou.
+- **Pourquoi :** 10 pages au maximum hors annexes ; demande d'Hugo.

@@ -1,20 +1,28 @@
-\documentclass{rapportClass} % Classe de document (rapport)
+\documentclass{rapportClass}
 
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\setlist{nosep, leftmargin=*}
 
+% Sections numérotées 1, 2, 3 (pas de chapitres : chaque chapitre ouvrirait une nouvelle page).
+\renewcommand{\thesection}{\arabic{section}}
+\renewcommand{\sectionmark}[1]{\markboth{#1}{}}
+\fancyhead[C]{M2 SLCD}
+\fancyhead[R]{WeatherScope}
 
-\title{Rapport de Projet}
+% Parties à compléter par l'équipe distribuée / mesures.
+\newcommand{\afaire}[1]{\textcolor{red}{\textbf{[À compléter : #1]}}}
+\newcommand{\cmd}[1]{\texttt{#1}}
+
+\title{WeatherScope}
 \author{Hugo CLAVEILLE, JULES Stevenson, DIALLO Mamadou Ougailou}
-% -- Master 1 Informatique
-\date{\today}
+\date{8 novembre 2026}
 
-
-
-
-% Appliquer aussi aux pages de type 'plain' (début de chapitre, sommaire…)
 \fancypagestyle{plain}{
   \fancyhf{}
   \fancyhead[L]{Rapport de Projet}
-  \fancyhead[C]{M2 SLCS}
+  \fancyhead[C]{M2 SLCD}
   \fancyhead[R]{BigData \& noSQL}
   \fancyfoot[C]{\thepage}
   \renewcommand{\headrulewidth}{0.4pt}
@@ -23,57 +31,293 @@
 \begin{document}
 
 \begin{titlepage}
-    \thispagestyle{empty} % pas d'en-tête/pied ici
-    
+    \thispagestyle{empty}
     \begin{center}
-        % Logo en haut
         \includegraphics[width=1\textwidth]{assets/logo.png}\\[2cm]
-        
-        % Titre
-        {\Huge \textbf{Rapport de Projet}}\\[1cm]
+        {\Huge \textbf{WeatherScope}}\\[0.5cm]
+        {\Large Observatoire météo historique sur NOAA GHCN-Daily}\\[1cm]
         {\Large BigData \& noSQL}\\[1cm]
-
         \vspace{1cm}
-        % Auteur
         \textbf{Hugo CLAVEILLE\\ JULES Stevenson\\ DIALLO Mamadou Ougailou}\\[0.5cm]
-        
-        % Sous-titre
         {\Large Master 2 SLCD}\\[2cm]
-        
-        % Date
         \vfill
-        {\large \today}
+        {\large 8 novembre 2026}
     \end{center}
 \end{titlepage}
 
-\newpage
-\thispagestyle{empty}
-\tableofcontents
-\newpage
+\setcounter{page}{1}
 
 % ======================================================================================================================
-\chapter{Introduction}
-Dans le cadre de l'Unité d'Enseignement de Software Engineering 2025, il nous a été demandé de réaliser un projet individuel
-visant à étudier et implémenter des méthodes de transmission optimisée de données.
-La transmission de tableaux d’entiers constitue un problème fondamental dans de nombreux systèmes
-informatiques et réseaux, en particulier pour les applications nécessitant un échange rapide et
-efficace de grandes quantités de données. Ce projet s’inscrit donc dans un contexte pratique où
-la performance et l’efficacité des transferts d’information sont essentielles.
+\section{Périmètre}
 
-L’objectif est d’étudier différentes méthodes de compression de ces tableaux afin de réduire le nombre
-de bits transmis tout en conservant un accès direct à chaque élément. La méthode choisie, appelée Bit Packing,
-représente chaque entier avec le minimum de bits nécessaires, regroupé ensuite dans des entiers standards
-pour la transmission. Deux variantes seront explorées : une autorisant l’écriture d’un entier compressé sur
-deux entiers consécutifs, et une qui ne le permet pas. Le projet inclut également des benchmarks pour évaluer les gains de performance.
+\begin{itemize}
+  \item \textbf{Zones :} Allemagne (\cmd{GM}) et Espagne (\cmd{SP}), définies par le préfixe pays de l'identifiant NOAA.
+    Deux climats contrastés (océanique/continental et méditerranéen), différents des zones des autres groupes (États-Unis, Afrique).
+  \item \textbf{Années d'étude :} 2015--2024 (10 ans). \textbf{Référence :} 1991--2020 (normale climatologique de 30 ans),
+    chargée par le même pipeline et comptée à part.
+  \item \textbf{Stations :} les 774 stations (589 GM, 185 SP) dont au moins un des éléments TMAX, TMIN, PRCP
+    est actif pendant 2015--2024 d'après \cmd{ghcnd-inventory.txt}. Les stations qui commencent ou s'arrêtent
+    pendant la période sont gardées et signalées (annexe~\ref{ann:anomalies}).
+  \item Les seuils du sujet sont dépassés : 2\,650\,999 couples station-jour sur 2015--2024 (minimum 200\,000)
+    et 21,46 millions d'observations au total (minimum 10 millions pour E1).
+\end{itemize}
 
-La gestion des débordements (overflow) est un aspect crucial de ce projet. En effet, lorsque les entiers à compresser
-dépasse la capacité de bits allouée, il est nécessaire de mettre en place une stratégie efficace pour gérer ces cas.
-La méthode choisie consiste à utiliser des entiers supplémentaires pour stocker les valeurs qui ne peuvent pas être représentées
-dans le format compressé initial. Cette approche permet de maintenir l’intégrité des données tout en optimisant l’espace de stockage.
+% ======================================================================================================================
+\section{Données}
 
+\paragraph{Provenance.} Une archive NOAA par station (\cmd{by\_station/<id>.csv.gz}, 774 fichiers, 237 Mo),
+récupérée le 8 novembre 2026, plus les fichiers de métadonnées (\cmd{ghcnd-stations.txt}, \cmd{ghcnd-inventory.txt}).
+L'URL, la date, la taille et le SHA-256 de chaque fichier sont dans \cmd{data/manifest/}. En base, chaque import
+crée un lot (table \cmd{batches}) et chaque observation garde l'identifiant du lot qui l'a écrite.
 
+\paragraph{Volume.} Calculé directement sur les fichiers NOAA (\cmd{verify/data\_report.py}).
+Valide = sans \cmd{qflag} et sans \cmd{mflag} P.
 
+\begin{table}[H]
+\centering\small
+\begin{tabular}{llrrrr}
+\toprule
+Zone & Élément & Stations 2015--24 & Valides 2015--24 & Valides 1991--2014 (réf.) & Invalides \\
+\midrule
+GM & TMAX & 474 & 1\,662\,847 & 3\,572\,600 & 104 \\
+GM & TMIN & 474 & 1\,662\,826 & 3\,571\,251 & 137 \\
+GM & PRCP & 579 & 2\,010\,884 & 4\,208\,967 & 49 \\
+SP & TMAX & 183 & 598\,648 & 1\,002\,404 & 622 \\
+SP & TMIN & 183 & 603\,741 & 994\,030 & 477 \\
+SP & PRCP & 184 & 604\,505 & 965\,962 & 14 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
+\paragraph{Couverture.} Couples station-jour 2015--2024 : 2\,029\,108 (GM), 621\,891 (SP).
+Répartition géographique : 213 mailles de 0,5° occupées en Allemagne, 94 en Espagne ; la densité est
+plus forte en Allemagne et inégale à l'intérieur de chaque pays (côtes et grandes villes en Espagne).
+Le volume est stable de 1991 à 2023 ; en 2024, l'Espagne perd environ 24\,\% de ses observations
+(142\,937 contre 187\,782 en 2023), car des stations s'arrêtent ou ne sont pas encore publiées.
 
+\paragraph{Traitement des données.}
+\begin{itemize}
+  \item \textbf{\cmd{qflag} non vide :} observation stockée et comptée, mais exclue de tous les calculs (1\,403 lignes).
+  \item \textbf{Pluie T (trace) :} valide, comptée 0~mm et à part (267 lignes, toutes en Espagne). Une trace est une
+    vraie observation d'une pluie négligeable.
+  \item \textbf{Pluie P (manquante, présumée nulle) :} traitée comme manquante, jamais comme un zéro mesuré
+    (aucune dans notre extrait, règle tout de même implémentée).
+  \item \textbf{Pluie B, D :} cumuls de 2 ou 4 relevés partiels, ce sont de vraies mesures, gardées telles quelles.
+  \item \textbf{Valeurs inhabituelles sans \cmd{qflag} :} gardées (ex. 203,7~mm le 13/09/2019 à SP000007038,
+    épisode méditerranéen réel) ; seule la NOAA invalide une valeur.
+  \item \textbf{Historiques incomplets :} les jours manquants ne sont jamais complétés. Ils coupent les épisodes (F2),
+    rendent un mois inéligible sous 80\,\% de jours valides (F3) et sont pris en compte dans la part de mailles
+    qui rapportent (F4).
+  \item \textbf{Doublons :} l'identité d'une observation est (station, élément, date) ; c'est la clé primaire,
+    un doublon ne peut donc pas être stocké.
+  \item \textbf{Unités :} valeurs stockées en entiers bruts NOAA (dixièmes de °C ou de mm), convertis à l'affichage seulement.
+\end{itemize}
+
+\paragraph{Heure d'observation.} Le champ \cmd{OBS-TIME} est vide pour 100\,\% de nos lignes et 98\,\% des
+valeurs proviennent de l'ECA\&D (\cmd{sflag} E), qui agrège des réseaux nationaux dont la « journée » de mesure
+peut différer (en particulier pour la pluie, cumulée d'un matin au suivant). Une même date peut donc couvrir des
+fenêtres de 24~h décalées entre stations. Conséquence : une comparaison entre stations au jour près peut être
+décalée d'un jour. F4 en tient compte en regroupant les jours consécutifs en un seul événement ; F2 et F3
+ne comparent pas des stations au jour près.
+
+% ======================================================================================================================
+\section{Services}
+
+Interface en ligne de commande (\cmd{uv run python -m weatherscope.cli}), identique en local et en distribué.
+Chaque résultat contient un champ \cmd{sources} que la commande \cmd{trace} transforme en liste des observations
+d'origine (station, date, élément, valeur, flags, lot). L'option \cmd{-{}-json} donne le résultat complet
+en ordre canonique.
+
+\begin{description}
+  \item[F1 -- Explorer une station.] Entrées : zone ou rectangle, nom ; puis station et intervalle.
+    Sortie : par élément et par mois, jours attendus, présents, valides, invalides, traces, disponibilité,
+    moyenne (températures) ou cumul (pluie), min, max.
+    \emph{Exemple :} Madrid Retiro (SP000003195), juillet 2022 : TMAX moyenne 36,78~°C (max 40,7~°C),
+    29 jours valides sur 31 (disponibilité 0,94).
+
+  \item[F2 -- Épisodes prolongés.] Entrées : zone, période, élément, seuil, durée minimale.
+    Un jour compte s'il a une valeur valide $\ge$ seuil ; un épisode est une suite maximale de dates consécutives
+    qui comptent. Un jour absent ou invalide coupe l'épisode ; les dates étant continues, un épisode du 30 décembre
+    au 2 janvier reste un seul épisode. Sortie : station, début, fin, durée, dépassement moyen, maximum.
+    \emph{Exemple :} Espagne 2015--2024, TMAX $\ge$ 40~°C pendant 3 jours ou plus : 220 épisodes ; le plus long à
+    SPE00120503, du 7 au 17 juillet 2022 (11 jours, max 45,2~°C). Pour PRCP $\ge$ 5~mm pendant 3 jours en Allemagne, 114 épisodes
+    chevauchent le Nouvel An et sont bien comptés une seule fois.
+
+  \item[F3 -- Mois anormaux.] Entrées : zones, années, élément. Référence : 1991--2020 (30 ans).
+    Un mois-station est éligible s'il a au moins 80\,\% de jours valides ; une normale station $\times$ mois exige
+    au moins 24 années éligibles sur 30. L'anomalie d'une zone est la moyenne des anomalies par maille de 0,5°,
+    puis la moyenne des mailles, pour ne pas surpondérer les régions denses ; le nombre de mailles et de stations
+    utilisées est renvoyé et un mois doit couvrir au moins 5 mailles. Classement par |anomalie|.
+    \emph{Exemple :} TMAX, 2015--2024 : décembre 2015 en Allemagne (+5,16~°C, 176 mailles, 313 stations),
+    avril 2023 en Espagne (+3,61~°C).
+
+  \item[F4 -- Événements régionaux.] Entrées : zone, période, élément, quantile (95\,\%), seuils de surface.
+    Un jour est inhabituel pour une station si sa valeur dépasse son quantile 95\,\% du même mois sur 1991--2020.
+    Pour tenir compte de la densité, on compte des mailles et non des stations : un jour est régional si au moins
+    3 mailles et 25\,\% des mailles qui rapportent sont touchées ; les jours régionaux consécutifs forment un
+    événement, de sévérité égale à la somme des parts de mailles touchées. Un jour où une seule maille est touchée
+    est un extrême isolé. Preuves : chaque observation inhabituelle avec son seuil.
+    \emph{Exemple :} Allemagne, TMAX, 2015--2024 : 166 événements ; le plus sévère du 1er au 12 novembre 2015
+    (98\,\% des mailles le 8). 185 jours d'extrême isolé, souvent à la Zugspitze (GM000004155, 2\,964~m).
+
+  \item[F5 -- Mise à jour.] Entrée : fichiers NOAA réels (\cmd{by\_station} ou \cmd{by\_year}).
+    Identité : (station, élément, date). Politique : une valeur ou un flag différent \emph{écrase} l'ancienne
+    version, qui est \emph{archivée} dans \cmd{observations\_history} avec son lot. Une station allemande ou
+    espagnole inconnue est ajoutée d'après \cmd{ghcnd-stations.txt}, les autres pays sont ignorés ; un lot contenant
+    deux valeurs différentes pour une même observation est refusé. Les agrégats mensuels des mois touchés
+    sont recalculés dans la même transaction.
+    \emph{Exemple :} fichier \cmd{by\_year/2025} complet : 697\,993 lignes importées en 35~s, 18,9~M lignes
+    d'autres pays ignorées ; second import : 0 nouvelle, 0 modifiée. Réimport des 21,46~M lignes : aucun changement.
+\end{description}
+
+% ======================================================================================================================
+\section{Partie I -- Prototype local}
+
+\paragraph{Technologie.} PostgreSQL 17.2, processus serveur séparé (conteneur Docker, port réseau).
+Nos données sont tabulaires et de forme fixe, et F2--F4 sont des analyses (suites de jours, écarts à une moyenne,
+croisement de stations aux mêmes dates) que les fonctions de fenêtre SQL expriment directement. Surtout, le même SQL
+tourne sur Citus (Partie II), qui distribue PostgreSQL : un seul code pour les deux prototypes, ce qui facilite la
+garantie de résultats identiques. Nous avons écarté MongoDB (F2--F4 en pipelines d'agrégation longs à écrire en deux jours),
+Cassandra et ClickHouse (jamais pratiqués).
+
+\paragraph{Organisation des données.}
+\begin{itemize}
+  \item \cmd{observations} : une ligne par mesure (station, élément, date, valeur entière, mflag, qflag, sflag, lot),
+    clé primaire (station, élément, date). Ce format reprend exactement celui de la NOAA (chaque mesure a ses flags)
+    et sert d'identité pour F5.
+  \item \cmd{stations} : métadonnées et maille de 0,5° (\cmd{cell\_lat}, \cmd{cell\_lon}) utilisée par F3 et F4.
+  \item \cmd{monthly\_stats} : par station, élément et mois, comptes (lignes, valides, invalides, traces, P),
+    somme, min, max des valeurs valides. Maintenue par F5.
+  \item \cmd{batches}, \cmd{observations\_history}, \cmd{observations\_staging} : provenance, historique et chargement de F5.
+\end{itemize}
+
+\paragraph{Accès et mécanismes.}
+F1 et F2 lisent une station ou une zone sur une période : la clé primaire (station, élément, date) est aussi
+l'index qui sert ces lectures. F2 utilise la méthode « date moins rang » : dans une suite de jours consécutifs,
+\cmd{date - row\_number()} est constant, ce qui donne les épisodes en une seule passe triée par station.
+F3 ne lit que \cmd{monthly\_stats} (86~Mo au lieu de 2,8~Go). Tous les calculs sont faits sur des entiers et
+des \cmd{numeric}, arrondis seulement à la sortie : l'ordre des additions change en distribué et des flottants
+donneraient des résultats légèrement différents. L'import (F5) passe par \cmd{COPY} vers une table de chargement puis
+\cmd{INSERT \ldots{} ON CONFLICT DO UPDATE \ldots{} WHERE} la valeur change, ce qui rend l'import idempotent.
+Taille en base : 2,9~Go (table 1,6~Go, index 1,3~Go). Chargement complet : 19~min.
+
+\paragraph{Décision justifiée par une mesure.} \afaire{F3 sur \cmd{monthly\_stats} contre F3 recalculé sur
+\cmd{observations} : temps mesurés (médiane de 5 exécutions, cache chaud).}
+
+\paragraph{Conception alternative.} Une ligne par station et par jour, une colonne par élément
+(\cmd{sql/alt\_wide.sql}) : moins de lignes, mais des flags répétés par colonne et un F5 plus compliqué.
+\afaire{taille et temps sur F1 et F2 pour les deux conceptions, et conclusion.}
+
+% ======================================================================================================================
+\section{Partie II -- Prototype distribué}
+
+\paragraph{Déploiement.} Citus 13.0 (PostgreSQL 17.2) : un coordinateur et 2 workers, conteneurs distincts avec
+stockage et ports séparés. L'application ne connaît que le coordinateur : seule la variable \cmd{DATABASE\_URL} change.
+\afaire{fichier de déploiement, ressources allouées.}
+
+\paragraph{Placement.} \cmd{observations} est répartie par hachage de la station en 32 shards (16 par worker).
+\cmd{observations\_history}, \cmd{observations\_staging} et \cmd{monthly\_stats} sont réparties de la même façon et
+\emph{colocalisées} : les mêmes stations sont sur le même worker pour toutes ces tables. \cmd{stations} et
+\cmd{batches} (774 lignes de métadonnées, pas des observations) sont des tables de référence copiées sur chaque worker.
+Pourquoi la station : toutes les mesures d'une station sont au même endroit, donc F1 ne contacte qu'un worker,
+les épisodes de F2 (fenêtres découpées par station) et F5 se calculent entièrement sur chaque worker.
+Écartés : la date (F1 et F2 toucheraient tous les workers et F2 devrait recoller des épisodes coupés) et le pays
+(2 valeurs seulement, très déséquilibré).
+
+\paragraph{Instances contactées et combinaison.} Une requête sur une station (F1) est routée vers un seul shard
+(\cmd{Task Count: 1}). Une requête sur une zone (F2, F3, F4) s'exécute sur les 32 shards ; chaque worker renvoie
+des résultats partiels (épisodes complets pour F2, sommes et comptes pour F3 et F4) que le coordinateur fusionne.
+\afaire{extraits \cmd{EXPLAIN} (option \cmd{-{}-explain}) : requête étroite contre requête large.}
+
+\paragraph{Équilibre et écritures.} \afaire{répartition des lignes et de la taille par worker (\cmd{citus\_shards}),
+temps du chargement distribué.}
+
+\paragraph{Résultats identiques.} \afaire{comparaison automatique local / distribué, tri canonique, requêtes
+couvrant plusieurs instances.}
+
+\paragraph{Configuration alternative.} 3 workers (\cmd{citus\_add\_node} puis rééquilibrage), même code.
+\afaire{mesures.}
+
+\paragraph{Perte d'une instance.} Les shards ne sont pas répliqués. Si un worker est arrêté, toute requête qui en a
+besoin échoue côté base, et l'interface affiche « ÉCHEC » avec la cause, sans aucun résultat partiel (code 2).
+\afaire{F1 sur une station du worker arrêté, puis F3 : sorties obtenues.}
+Un système en production répliquerait chaque shard (ou chaque worker) pour continuer à répondre ;
+notre déploiement sur un seul poste ne le fait pas et n'est pas équivalent à un cluster de machines indépendantes.
+
+% ======================================================================================================================
+\section{Expériences}
+
+Poste : processeur 8 cœurs / 16 threads, 13~Go de RAM, SSD NVMe ; PostgreSQL 17.2, Citus 13.0, \cmd{shared\_buffers}
+2~Go en local. Toutes les instances partagent ce processeur, cette mémoire et ce disque.
+
+\paragraph{E1 -- Volume.} \afaire{3 sous-ensembles (par ex. 2015--2024 = 7,14~M, 2005--2024, 1991--2024 = 21,46~M) :
+temps d'import, temps des services, taille. La base complète (2,9~Go) tient-elle en mémoire ?}
+
+\paragraph{E2 -- Local contre distribué.} \afaire{local, Citus-2, Citus-3 sur une requête étroite (F1),
+une agrégation longue (F3) et une analyse multi-stations (F4) ; médiane et dispersion, conditions de cache.}
+
+\paragraph{E3 -- Charge variable.} Prédiction écrite avant les mesures (\cmd{docs/e3\_prediction.md}) :
+le local l'emporte sur la routine (F1 : surcoût fixe du coordinateur) ; Citus-2 l'emporte sur les études régionales
+grâce au parallélisme de F2 ; dans un mélange, le basculement se fait vers 1 à 5\,\% de requêtes régionales.
+\afaire{mesures pour 0, 1, 5, 25, 50, 100\,\% de requêtes régionales, et confrontation avec la prédiction.}
+
+\paragraph{E4 -- Limite (bonus).} Piste : F4 recalcule les quantiles de référence (30 ans) à chaque requête
+(29~s sur l'Allemagne) ; une table de seuils tenue à jour par F5 les rendrait immédiats, au prix d'écritures en plus.
+\afaire{si mesuré.}
+
+% ======================================================================================================================
+\section{Vérification indépendante}
+
+\cmd{verify/} relit directement les fichiers NOAA en Python, sans la base ni le code des services,
+avec des calculs exacts (fractions). \cmd{verify/compare.py} compare automatiquement ses résultats à ceux des
+services, après tri canonique : F2 TMAX Espagne (220 épisodes), F2 PRCP Allemagne (16\,126 épisodes),
+F3 TMAX Allemagne et F3 PRCP Espagne (120 mois chacun, classement compris) sont identiques.
+Seul écart rencontré pendant le développement : l'arrondi, que Python fait au pair (13,125 $\to$ 13,12) et PostgreSQL
+loin de zéro (13,13) ; les deux côtés arrondissent désormais comme PostgreSQL.
+
+% ======================================================================================================================
+\section{Limites}
+
+\begin{itemize}
+  \item Heure d'observation inconnue : comparaisons entre stations au jour près approximatives (section 2).
+  \item F4 utilise un seuil fixe (quantile 95\,\%) et des mailles de 0,5° : un relief marqué (Zugspitze) produit
+    des extrêmes isolés qui sont réels mais peu représentatifs de la région.
+  \item Les normales exigent 24 années sur 30 : les stations récentes ne participent pas à F3 et F4.
+  \item 9 stations espagnoles ont une longitude de signe inversé dans les métadonnées NOAA (annexe~\ref{ann:anomalies}) :
+    elles sont rangées dans une mauvaise maille pour F3 et F4. Nous ne corrigeons pas les métadonnées sources.
+  \item Le distribué tourne sur un seul poste, sans réplication.
+\end{itemize}
+
+% ======================================================================================================================
+\appendix
+\renewcommand{\thesection}{\Alph{section}}
+\section{Anomalies présentes dans les données}\label{ann:anomalies}
+
+Calculées sur les fichiers NOAA (\cmd{verify/data\_report.py}, détail dans \cmd{docs/data\_report.md}),
+1991--2024 ; valeurs en dixièmes comme dans les fichiers.
+
+\begin{table}[H]
+\centering\small
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{4.2cm}r>{\raggedright\arraybackslash}X}
+\toprule
+Anomalie & Fréquence & Exemple (station, date, valeur) \\
+\midrule
+\cmd{qflag} I (incohérence interne) & 682 & GM000003218, 1997-01-01, TMAX = $-151$ \\
+\cmd{qflag} O (valeur aberrante) & 320 & GME00121150, 2017-06-29, PRCP = 1969 \\
+\cmd{qflag} N (zéro suspect) & 192 & GME00123382, 2006-04-17, TMAX = 0 \\
+\cmd{qflag} S (incohérence spatiale) & 172 & GME00102348, 1993-02-04, TMIN = 51 \\
+\cmd{qflag} K (série répétée) & 26 & GME00132550, 1998-08-27, PRCP = 1 \\
+Pluie trace (\cmd{mflag} T) & 267 & SPW00013025, 1991-01-08, PRCP = 0 \\
+Pluie > 200~mm sans \cmd{qflag} & 15 & SP000007038, 2019-09-13, PRCP = 2037 \\
+Station qui s'arrête pendant 2015--2024 & 131 & GME00102236, dernière observation 2019-04-07 \\
+Station qui commence pendant 2015--2024 & 32 & GME00121486, première observation 2021-06-02 \\
+Trou de plus de 30 jours (2015--2024) & 94 & GME00102169, du 2015-01-13 au 2015-03-19 \\
+Longitude de signe inversé (\cmd{ghcnd-stations.txt}) & 9 stations & SPE00101035 (Alicante El Altet) : +0,5706, alors que la même station sous SPM00008360 est à $-0{,}558$ \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Recherchées mais absentes : paire TMAX < TMIN le même jour parmi les observations sans \cmd{qflag},
+et pluie \cmd{mflag} P ; les règles de traitement correspondantes restent implémentées.
 
 \end{document}
