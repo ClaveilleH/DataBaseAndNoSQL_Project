@@ -36,14 +36,18 @@ def sh(cmd: list[str], **kw) -> subprocess.CompletedProcess:
     return subprocess.run(cmd, capture_output=True, text=True, check=kw.pop("check", True), **kw)
 
 
-def wait_ready(url: str, citus: bool, timeout: float = 180) -> None:
+def wait_ready(url: str, citus: bool, timeout: float = 600) -> None:
+    """Attend le serveur ; pour Citus, attend aussi que CHAQUE worker accepte les connexions
+    (un worker recréé peut rester plusieurs minutes en récupération après un rééquilibrage)."""
     deadline = time.time() + timeout
     while True:
         try:
             with connect(url) as conn, conn.cursor() as cur:
                 cur.execute("SELECT citus_version()" if citus else "SELECT 1")
                 if citus:
-                    cur.execute("SELECT count(*) FROM pg_dist_node WHERE isactive")
+                    cur.execute("SELECT bool_and(success) FROM run_command_on_workers($$SELECT 1$$)")
+                    if not cur.fetchone()[0]:
+                        raise RuntimeError("un worker n'accepte pas encore les connexions")
                 return
         except Exception:
             if time.time() > deadline:

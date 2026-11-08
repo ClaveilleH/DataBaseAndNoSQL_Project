@@ -1,0 +1,409 @@
+{
+ "environment": {
+  "date": "2026-11-08 21:12:56",
+  "os": "Windows-11-10.0.26300-SP0",
+  "python": "3.13.6",
+  "cpu_threads": 8,
+  "docker": "29.2.1",
+  "docker_cpus": 8,
+  "docker_mem_gb": 7.6,
+  "server": {
+   "postgres": "PostgreSQL 17.2 (Debian 17.2-1.pgdg120+1)",
+   "shared_buffers": "2GB",
+   "work_mem": "4MB",
+   "parallel_workers": "2"
+  }
+ },
+ "protocol": {
+  "runs": 5,
+  "warmup": 1,
+  "cache": "chaud (1 exécution d'échauffement par requête)",
+  "ingestion": "ingest.load.import_files, paquets de 50 fichiers, une transaction par paquet, 1991-2024"
+ },
+ "sizes": [
+  {
+   "pct": 10,
+   "files": 78,
+   "ingest_s": 208.1,
+   "import_counts": {
+    "batch": 1,
+    "read": 2164681,
+    "inserted": 2164681,
+    "updated": 0,
+    "unchanged": 0,
+    "ignored_other_zones": 0,
+    "ignored_unknown_station": 0,
+    "new_stations": []
+   },
+   "ingest_source": "base dédiée, import_files",
+   "size": {
+    "database_mb": 267,
+    "observations": {
+     "total_mb": 250,
+     "table_mb": 158,
+     "index_mb": 92
+    },
+    "monthly_stats": {
+     "total_mb": 9,
+     "table_mb": 6,
+     "index_mb": 2
+    },
+    "observations_rows": 2164681,
+    "stations": 78,
+    "first_date": "1991-01-01",
+    "last_date": "2024-12-31",
+    "study_rows": 706941,
+    "reference_rows": 1457740
+   },
+   "ingest_rows_per_s": 10402,
+   "shared_buffers": "2GB",
+   "queries": {
+    "étroite : F1, une station, un an": {
+     "runs": 5,
+     "median_s": 0.007,
+     "mean_s": 0.0071,
+     "stdev_s": 0.0029,
+     "iqr_s": 0.0043,
+     "min_s": 0.0042,
+     "max_s": 0.011,
+     "all_s": [
+      0.011,
+      0.0088,
+      0.0045,
+      0.0042,
+      0.007
+     ],
+     "first_run_s": 0.0102,
+     "warmup_runs": 1
+    },
+    "agrégation longue : TMAX annuel par zone, 1991-2024": {
+     "runs": 5,
+     "median_s": 0.4412,
+     "mean_s": 0.4407,
+     "stdev_s": 0.0212,
+     "iqr_s": 0.0188,
+     "min_s": 0.4172,
+     "max_s": 0.4728,
+     "all_s": [
+      0.4455,
+      0.4728,
+      0.4267,
+      0.4412,
+      0.4172
+     ],
+     "first_run_s": 0.4017,
+     "warmup_runs": 1
+    },
+    "multi-stations : F2, Allemagne, TMAX >= 30 °C, 10 ans": {
+     "runs": 5,
+     "median_s": 0.2075,
+     "mean_s": 0.2149,
+     "stdev_s": 0.0131,
+     "iqr_s": 0.0225,
+     "min_s": 0.2038,
+     "max_s": 0.2309,
+     "all_s": [
+      0.2309,
+      0.2274,
+      0.2049,
+      0.2038,
+      0.2075
+     ],
+     "first_run_s": 0.2277,
+     "warmup_runs": 1
+    },
+    "multi-stations : F2, Espagne, TMAX >= 35 °C, 10 ans": {
+     "runs": 5,
+     "median_s": 0.1874,
+     "mean_s": 0.1504,
+     "stdev_s": 0.0653,
+     "iqr_s": 0.1197,
+     "min_s": 0.0762,
+     "max_s": 0.204,
+     "all_s": [
+      0.204,
+      0.202,
+      0.1874,
+      0.0823,
+      0.0762
+     ],
+     "first_run_s": 0.2052,
+     "warmup_runs": 1
+    },
+    "anomalies : F3, deux pays, TMAX": {
+     "runs": 5,
+     "median_s": 0.0899,
+     "mean_s": 0.0911,
+     "stdev_s": 0.0043,
+     "iqr_s": 0.0048,
+     "min_s": 0.0852,
+     "max_s": 0.0959,
+     "all_s": [
+      0.0946,
+      0.0959,
+      0.0898,
+      0.0852,
+      0.0899
+     ],
+     "first_run_s": 0.0954,
+     "warmup_runs": 1
+    }
+   },
+   "cache_hit_ratio": null,
+   "blocks_outside_shared_buffers": 0
+  },
+  {
+   "pct": 25,
+   "files": 194,
+   "ingest_s": 1221.3,
+   "import_counts": {
+    "batch": 1,
+    "read": 5593881,
+    "inserted": 5593881,
+    "updated": 0,
+    "unchanged": 0,
+    "ignored_other_zones": 0,
+    "ignored_unknown_station": 0,
+    "new_stations": []
+   },
+   "ingest_source": "base dédiée, import_files",
+   "size": {
+    "database_mb": 669,
+    "observations": {
+     "total_mb": 638,
+     "table_mb": 408,
+     "index_mb": 229
+    },
+    "monthly_stats": {
+     "total_mb": 23,
+     "table_mb": 16,
+     "index_mb": 7
+    },
+    "observations_rows": 5593881,
+    "stations": 194,
+    "first_date": "1991-01-01",
+    "last_date": "2024-12-31",
+    "study_rows": 1826891,
+    "reference_rows": 3766990
+   },
+   "ingest_rows_per_s": 4580,
+   "shared_buffers": "2GB",
+   "queries": {
+    "étroite : F1, une station, un an": {
+     "runs": 5,
+     "median_s": 0.004,
+     "mean_s": 0.0045,
+     "stdev_s": 0.0011,
+     "iqr_s": 0.0004,
+     "min_s": 0.0037,
+     "max_s": 0.0064,
+     "all_s": [
+      0.004,
+      0.0037,
+      0.004,
+      0.0044,
+      0.0064
+     ],
+     "first_run_s": 0.005,
+     "warmup_runs": 1
+    },
+    "agrégation longue : TMAX annuel par zone, 1991-2024": {
+     "runs": 5,
+     "median_s": 0.9779,
+     "mean_s": 0.9947,
+     "stdev_s": 0.0519,
+     "iqr_s": 0.0531,
+     "min_s": 0.9445,
+     "max_s": 1.0752,
+     "all_s": [
+      1.0752,
+      0.9615,
+      1.0146,
+      0.9779,
+      0.9445
+     ],
+     "first_run_s": 1.0976,
+     "warmup_runs": 1
+    },
+    "multi-stations : F2, Allemagne, TMAX >= 30 °C, 10 ans": {
+     "runs": 5,
+     "median_s": 0.4412,
+     "mean_s": 0.4274,
+     "stdev_s": 0.0197,
+     "iqr_s": 0.0301,
+     "min_s": 0.401,
+     "max_s": 0.4421,
+     "all_s": [
+      0.4413,
+      0.4112,
+      0.401,
+      0.4412,
+      0.4421
+     ],
+     "first_run_s": 0.3937,
+     "warmup_runs": 1
+    },
+    "multi-stations : F2, Espagne, TMAX >= 35 °C, 10 ans": {
+     "runs": 5,
+     "median_s": 0.3594,
+     "mean_s": 0.2801,
+     "stdev_s": 0.1198,
+     "iqr_s": 0.21,
+     "min_s": 0.1469,
+     "max_s": 0.3811,
+     "all_s": [
+      0.3594,
+      0.3617,
+      0.3811,
+      0.1516,
+      0.1469
+     ],
+     "first_run_s": 0.3769,
+     "warmup_runs": 1
+    },
+    "anomalies : F3, deux pays, TMAX": {
+     "runs": 5,
+     "median_s": 0.3983,
+     "mean_s": 0.4016,
+     "stdev_s": 0.0151,
+     "iqr_s": 0.0086,
+     "min_s": 0.3859,
+     "max_s": 0.426,
+     "all_s": [
+      0.3859,
+      0.3947,
+      0.4033,
+      0.3983,
+      0.426
+     ],
+     "first_run_s": 0.4099,
+     "warmup_runs": 1
+    }
+   },
+   "cache_hit_ratio": null,
+   "blocks_outside_shared_buffers": 0
+  },
+  {
+   "pct": 100,
+   "files": 774,
+   "ingest_s": 4602.0,
+   "import_counts": null,
+   "ingest_source": "chargement initial de la base principale (mesuré sans autre charge)",
+   "size": {
+    "database_mb": 2538,
+    "observations": {
+     "total_mb": 2439,
+     "table_mb": 1566,
+     "index_mb": 871
+    },
+    "monthly_stats": {
+     "total_mb": 91,
+     "table_mb": 63,
+     "index_mb": 27
+    },
+    "observations_rows": 21460068,
+    "stations": 774,
+    "first_date": "1991-01-01",
+    "last_date": "2024-12-31",
+    "study_rows": 7143985,
+    "reference_rows": 14316083
+   },
+   "ingest_rows_per_s": 4663,
+   "shared_buffers": "2GB",
+   "queries": {
+    "étroite : F1, une station, un an": {
+     "runs": 5,
+     "median_s": 0.0106,
+     "mean_s": 0.0111,
+     "stdev_s": 0.002,
+     "iqr_s": 0.0025,
+     "min_s": 0.0092,
+     "max_s": 0.0139,
+     "all_s": [
+      0.0096,
+      0.0139,
+      0.0106,
+      0.0092,
+      0.0122
+     ],
+     "first_run_s": 0.019,
+     "warmup_runs": 1
+    },
+    "agrégation longue : TMAX annuel par zone, 1991-2024": {
+     "runs": 5,
+     "median_s": 9.0891,
+     "mean_s": 9.4522,
+     "stdev_s": 0.97,
+     "iqr_s": 0.4047,
+     "min_s": 8.8445,
+     "max_s": 11.1581,
+     "all_s": [
+      11.1581,
+      8.8445,
+      9.2869,
+      9.0891,
+      8.8822
+     ],
+     "first_run_s": 10.2196,
+     "warmup_runs": 1
+    },
+    "multi-stations : F2, Allemagne, TMAX >= 30 °C, 10 ans": {
+     "runs": 5,
+     "median_s": 7.5084,
+     "mean_s": 7.5709,
+     "stdev_s": 0.4665,
+     "iqr_s": 0.4043,
+     "min_s": 7.061,
+     "max_s": 8.2881,
+     "all_s": [
+      7.7007,
+      8.2881,
+      7.061,
+      7.2964,
+      7.5084
+     ],
+     "first_run_s": 7.0899,
+     "warmup_runs": 1
+    },
+    "multi-stations : F2, Espagne, TMAX >= 35 °C, 10 ans": {
+     "runs": 5,
+     "median_s": 0.2904,
+     "mean_s": 0.291,
+     "stdev_s": 0.0063,
+     "iqr_s": 0.0113,
+     "min_s": 0.2844,
+     "max_s": 0.2982,
+     "all_s": [
+      0.2982,
+      0.2904,
+      0.2967,
+      0.2854,
+      0.2844
+     ],
+     "first_run_s": 0.3209,
+     "warmup_runs": 1
+    },
+    "anomalies : F3, deux pays, TMAX": {
+     "runs": 5,
+     "median_s": 1.323,
+     "mean_s": 1.3365,
+     "stdev_s": 0.0592,
+     "iqr_s": 0.1002,
+     "min_s": 1.2736,
+     "max_s": 1.4059,
+     "all_s": [
+      1.323,
+      1.39,
+      1.4059,
+      1.2736,
+      1.2898
+     ],
+     "first_run_s": 1.2805,
+     "warmup_runs": 1
+    }
+   },
+   "cache_hit_ratio": null,
+   "blocks_outside_shared_buffers": 0
+  }
+ ]
+}
