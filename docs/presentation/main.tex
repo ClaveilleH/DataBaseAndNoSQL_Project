@@ -5,8 +5,6 @@
 \author[Claveille, Jules, Diallo]{CLAVEILLE Hugo, JULES Stevenson, DIALLO Mamadou Ougailou\\[0.3em]\small M2 SLCD -- Big Data and NoSQL}
 \date{10 novembre 2026}
 
-% Résultats à compléter (distribué complet, E1-E4)
-\newcommand{\afaire}[1]{\textcolor{red}{\textbf{[À compléter : #1]}}}
 \lstdefinestyle{sql}{language=SQL, basicstyle=\ttfamily\scriptsize, keywordstyle=\color{accent}\bfseries,
   commentstyle=\color{gray}\itshape, morekeywords={FILTER,OVER,PARTITION,CONFLICT,DISTINCT,ILIKE}}
 
@@ -304,7 +302,7 @@ WHERE (observations.value, ...)
       \begin{itemize}
         \item Une station = un worker : \textbf{F1 contacte un seul worker} (\code{Task Count: 1})
         \item F2 et F5 calculés entièrement sur chaque worker
-        \item F3, F4 : 32 tâches, fusion par le coordinateur
+        \item F3 : calcul par station sur les workers ; F4 : seuils sur les workers, comptes par maille fusionnés
         \item Tables liées colocalisées ; \code{stations}, \code{batches} copiées partout
         \item Écartés : par date (épisodes coupés), par pays (2 valeurs)
       \end{itemize}
@@ -312,51 +310,125 @@ WHERE (observations.value, ...)
   \end{columns}
 \end{frame}
 
-\begin{frame}{Comparaison et panne}
-  \begin{block}{Cluster de test (1 coordinateur + 2 workers, 65 stations, 1,8 M observations)}
-    \begin{itemize}
-      \item 12 commandes : sortie \textbf{identique octet pour octet} au local
-      \item Worker arrêté : F1 sur une station de l'autre worker répond ; F3 affiche « ÉCHEC », aucun résultat partiel, code 2
-    \end{itemize}
-  \end{block}
-  \setbeamercolor{block title}{fg=white,bg=red!80!black}
-  \begin{block}{Données complètes}
-    \afaire{déploiement 3 workers, comparaison automatique sur les 21,46 M lignes, répartition par worker.}
-  \end{block}
+\begin{frame}{Problème trouvé en distribué, et corrigé}
+  \small
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \setbeamercolor{block title}{fg=white,bg=red!80!black}
+      \begin{block}{Premières mesures (poste A)}
+        F3 : 63 s sur Citus contre 1,5 s en local\\
+        F4 : 106 s contre 26 s
+        \begin{itemize}
+          \item F3 : 18 Mo de lignes mensuelles rapatriés sur le coordinateur, qui calculait seul normales et jointure
+          \item F4 : seuils (quantiles de 30 ans) calculés deux fois par requête
+        \end{itemize}
+      \end{block}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \setbeamercolor{block title}{fg=white,bg=green}
+      \begin{block}{Correction (D27)}
+        \begin{itemize}
+          \item F3 : normale par fenêtre \code{PARTITION BY station}, donc sur les workers ; 2,4 Mo reçus
+          \item F4 : seuils calculés une fois, sur les workers, puis passés aux requêtes suivantes
+        \end{itemize}
+        F4 Allemagne : 22,6 s $\rightarrow$ 7,5 s en local\\
+        Sorties \textbf{identiques} avant et après
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Résultats identiques, équilibre et panne}
+  \small
+  \begin{itemize}
+    \item \textbf{Base complète :} 14 tests local contre Citus identiques ; mêmes empreintes SHA-256 en local, Citus-2 et Citus-3
+    \item \textbf{Équilibre :} w1 1\,398 Mo, w2 1\,721 Mo (+23\,\%) : le hachage répartit les stations, pas les volumes ; Citus-3 : 950, 1\,045, 850 Mo
+    \item \textbf{Worker w2 arrêté :}
+      \begin{itemize}
+        \item F1 sur une station de w2 et F3 : « ÉCHEC », aucun résultat partiel, code 2
+        \item F1 sur une station de w1 : réponse normale
+        \item après redémarrage : mêmes sorties qu'avant
+      \end{itemize}
+  \end{itemize}
 \end{frame}
 
 %====================================================
 \section{Expériences}
 
-\begin{frame}{E1 et E2}
-  \begin{block}{E1 -- Volume}
-    \afaire{3 tailles (7,14 M, intermédiaire, 21,46 M) : temps de chargement, taille, F1 et F3.}
-  \end{block}
-  \begin{block}{E2 -- Local contre distribué}
-    \afaire{local, Citus-2, Citus-3 sur F1 (une station) et F2/F3 (un pays).}
-  \end{block}
+\begin{frame}{Deux postes, jamais comparés entre eux}
+  \begin{itemize}
+    \item \textbf{Poste A} (E1, premières mesures) : Windows, Docker 8 threads et 7,6 Go, disque plein à 95\,\%
+    \item \textbf{Poste B} (E2, E3 avec F3 et F4 corrigés) : Linux, 16 threads, 13 Go, SSD NVMe
+  \end{itemize}
+  \vspace{0.5em}
+  \small Local : \code{shared\_buffers} 2 Go ; Citus : même budget total réparti entre les workers.
+  Échauffement puis 3 à 7 exécutions, médiane.
 \end{frame}
 
-\begin{frame}{E3 -- Charge variable : prédiction déposée avant les mesures}
+\begin{frame}{E1 -- Volume (poste A, local)}
   \small
-  Charge de 200 requêtes : routine (F1, une station) et étude régionale (F2/F3, un pays), de 0 à 100\,\% de régional.
-  \begin{enumerate}
-    \item \textbf{Routine seule :} le local gagne (surcoût fixe du coordinateur, 1,3 à 2$\times$)
-    \item \textbf{Régional seul :} Citus-2 gagne grâce à F2 (32 tâches en parallèle, 1,5 à 3$\times$)
-    \item \textbf{Mélange :} bascule tôt, vers 1 à 5\,\% de régional
-  \end{enumerate}
-  \textbf{Risques :} mémoire partagée, un seul poste, plan d'exécution local.
-  \begin{block}{Mesures}
-    \afaire{résultats et confrontation avec la prédiction.}
-  \end{block}
+  \begin{table}
+    \centering
+    \begin{tabular}{|l|r|r|r|}
+      \hline
+       & \textbf{10\,\%} & \textbf{25\,\%} & \textbf{100\,\%} \\ \hline
+      Observations & 2,16 M & 5,59 M & 21,46 M \\
+      Base & 267 Mo & 669 Mo & 2\,538 Mo \\
+      Import (F5) & 208 s & 1\,221 s & 4\,602 s \\ \hline
+      F1 : une station, un an & 0,007 s & 0,004 s & 0,011 s \\
+      TMAX annuel par zone & 0,44 s & 0,98 s & 9,09 s \\
+      F2 Allemagne & 0,21 s & 0,44 s & 7,51 s \\
+      F3 deux pays & 0,09 s & 0,40 s & 1,32 s \\ \hline
+    \end{tabular}
+  \end{table}
+  F1 constant (index). De 25 à 100\,\% : $\times$9 et $\times$17 pour $\times$3,8 de données, car la base dépasse les 2 Go de tampons et une partie des lectures va sur le disque.
+\end{frame}
+
+\begin{frame}{E2 -- Local contre distribué (poste B, base complète)}
+  \small
+  \begin{table}
+    \centering
+    \begin{tabular}{|l|r|r|r|}
+      \hline
+      \textbf{Médiane} & \textbf{Local} & \textbf{Citus-2} & \textbf{Citus-3} \\ \hline
+      F1 : une station, un an & 0,004 s & 0,005 s & 0,006 s \\
+      TMAX annuel par zone & 1,69 s & 1,77 s & 1,59 s \\
+      F2 Allemagne, $\geq$ 30 °C & 0,59 s & 0,56 s & 0,47 s \\
+      F2 Espagne, $\geq$ 35 °C & 0,13 s & 0,52 s & 0,43 s \\
+      F3 deux pays & 0,43 s & 0,44 s & 0,37 s \\
+      F4 Espagne, PRCP & 2,42 s & 3,51 s & 3,04 s \\ \hline
+    \end{tabular}
+  \end{table}
+  Base en mémoire : le distribué n'apporte presque rien. F1 paie le coordinateur ; les requêtes courtes sur une zone paient 32 tâches. Sur le poste A, où le local lisait sur le disque, Citus-2 était \textbf{4$\times$} plus rapide sur F2 Allemagne.
+\end{frame}
+
+\begin{frame}{E3 -- Charge variable : prédiction contre mesures (poste B)}
+  \small
+  \textbf{Prédiction (avant les mesures) :} local meilleur en routine ; Citus-2 meilleur en régional ; bascule vers 1 à 5\,\%.
+  \begin{table}
+    \centering
+    \begin{tabular}{|l|r|r|r|r|r|}
+      \hline
+      \textbf{Part régionale} & 0\,\% & 5\,\% & 25\,\% & 50\,\% & 100\,\% \\ \hline
+      Local, série de 20 (s) & 0,04 & 0,63 & 1,83 & 2,64 & 4,74 \\
+      Citus-2, série de 20 (s) & 0,06 & 0,74 & 2,41 & 4,53 & 8,60 \\ \hline
+    \end{tabular}
+  \end{table}
+  \begin{itemize}
+    \item \textcolor{green}{\textbf{Confirmé :}} routine, Citus-2 1,6$\times$ plus lent
+    \item \textcolor{red}{\textbf{Faux :}} le local gagne partout, pas de bascule. Base en mémoire : F2 Allemagne ne prend que 0,6 s en local, et les requêtes régionales courtes sont dominées par le coût des 32 tâches
+  \end{itemize}
+  Le gain du distribué dépend de ce qui limite le local : disque et mémoire sur le poste A, rien sur le poste B.
 \end{frame}
 
 \begin{frame}{E4 -- Limite}
-  \begin{block}{Piste identifiée}
-    F4 recalcule les quantiles de référence (30 ans) à chaque requête : 29 s sur l'Allemagne.\\
-    Une table de seuils par station et mois, tenue à jour par F5, les rendrait instantanés.
+  \begin{block}{F4 et ses seuils}
+    F4 recalculait les quantiles de référence (30 ans) deux fois par requête : 22,6 s sur l'Allemagne en local.\\
+    Calculés une fois : 7,5 s (D27).
   \end{block}
-  \afaire{mesure si réalisée.}
+  \begin{block}{Piste}
+    Une table de seuils par station et mois, tenue à jour par F5, supprimerait ce calcul, au prix d'écritures en plus à chaque import.
+  \end{block}
 \end{frame}
 
 %====================================================
@@ -388,12 +460,12 @@ ws trace --station SPE00120503 --element TMAX --start 2022-07-07 --end 2022-07-1
   \begin{itemize}
     \item Un seul poste : plusieurs conteneurs ne valent pas un vrai cluster de machines
     \item Pas de réplication : une panne de worker bloque les requêtes qui en ont besoin
-    \item F4 lent (quantiles recalculés)
+    \item F4 : quantiles de 30 ans recalculés à chaque requête (7,5 s sur l'Allemagne)
     \item Métadonnées NOAA laissées telles quelles (longitudes fausses)
     \item Interface en ligne de commande seulement
   \end{itemize}
   \vspace{0.5em}
-  \small Toutes les décisions, leurs raisons et les alternatives : \code{docs/decisions.md} (D1--D26).
+  \small Toutes les décisions, leurs raisons et les alternatives : \code{docs/decisions.md} (D1--D27).
 \end{frame}
 
 %====================================================
