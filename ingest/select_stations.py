@@ -11,7 +11,7 @@ import csv
 import hashlib
 import json
 import urllib.request
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 BASE_URL = "https://www.ncei.noaa.gov/pub/data/ghcn/daily/"
@@ -44,7 +44,7 @@ def fetch_metadata() -> list[dict]:
         if not path.exists():
             urllib.request.urlretrieve(BASE_URL + name, path)
         # Date de récupération = date d'écriture du fichier local.
-        retrieved = datetime.fromtimestamp(path.stat().st_mtime, timezone.utc)
+        retrieved = datetime.fromtimestamp(path.stat().st_mtime, UTC)
         entries.append({
             "url": BASE_URL + name,
             "path": str(path.relative_to(ROOT)),

@@ -1,0 +1,21 @@
+[project]
+name = "weatherscope"
+version = "0.1.0"
+description = "WeatherScope - observatoire météo historique (NOAA GHCN-Daily), M2 SLCD Big Data & NoSQL"
+requires-python = ">=3.12"
+dependencies = [
+    "psycopg[binary]>=3.2",  # client PostgreSQL (local + coordinateur Citus)
+    "polars>=1.20",       # parsing rapide des CSV NOAA (by_year / by_station)
+    "pyarrow>=18",
+    "httpx>=0.28",        # téléchargement des fichiers NOAA
+    "typer>=0.15",        # CLI des services F1-F5
+    "rich>=13",
+    "fastapi>=0.115",     # API web optionnelle pour la démo
+    "uvicorn>=0.34",
+    "numpy>=2",
+    "scipy>=1.14",        # stats pour E2/E3 (médiane, IQR, intervalles)
+    "matplotlib>=3.9",    # figures du rapport
+]
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.8"]
