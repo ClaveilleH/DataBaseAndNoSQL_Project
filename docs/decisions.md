@@ -24,6 +24,8 @@ Statuts : **adoptée** (validée par l'équipe), **proposée** (à valider), **r
 | D14 | 2026-11-08 | Distribution Citus : répartition par station, `stations` en table de référence | Adoptée |
 | D15 | 2026-11-08 | Modèle de données relationnel : une ligne par mesure, valeurs entières | Adoptée |
 | D16 | 2026-11-08 | Données chargées : 1991–2024, un seul chemin d'import pour le chargement initial et F5 | Adoptée |
+| D17 | 2026-11-08 | Définitions de F2 et F3, arrondi, vérification indépendante | Proposée |
+| D18 | 2026-11-08 | E3 : local contre Citus-2, charges et prédiction | Adoptée |
 
 ---
 
@@ -211,5 +213,36 @@ Statuts : **adoptée** (validée par l'équipe), **proposée** (à valider), **r
   - un seul chemin d'import : F5 est testé à chaque chargement, et il n'y a qu'un code à expliquer ;
   - des transactions par paquet limitent la taille de la table de chargement ; comme l'import est idempotent, un import interrompu se relance sans risque ;
   - garder une ligne de lot même sans changement trace l'exécution sans modifier l'archive.
-- **Vérifié le 2026-11-08 :** sur 3 stations (101 396 lignes), un réimport identique donne 0 nouvelle et 0 modifiée ; un lot avec une valeur changée et un `qflag` ajouté donne 2 modifiées, les anciennes valeurs sont archivées avec leur lot d'origine, et `monthly_stats` est recalculée (somme et comptes vérifiés à la main) ; réimporter ce lot ne change plus rien.
+- **Vérifié le 2026-11-08 :** sur 3 stations (101 396 lignes), un réimport identique donne 0 nouvelle et 0 modifiée ; un lot avec une valeur changée et un `qflag` ajouté donne 2 modifiées, les anciennes valeurs sont archivées avec leur lot d'origine, et `monthly_stats` est recalculée (somme et comptes vérifiés à la main) ; réimporter ce lot ne change plus rien. Chargement complet : 21 460 068 observations en 19 min ; réimport complet des mêmes fichiers en 5 min : 0 nouvelle, 0 modifiée, historique vide, `monthly_stats` inchangée.
 - **Alternatives écartées :** charger tout l'historique (44 M lignes : plus lourd sans servir aucun service) ; un chargeur rapide séparé de F5 (deux codes à maintenir et à expliquer).
+
+## D17 — Définitions de F2 et F3, vérification indépendante
+
+- **Statut :** proposée, 2026-11-08 (à confirmer par Stevenson, qui implémente F2 et F3). Référence exécutable : `verify/f2_episodes.py`, `verify/f3_anomalies.py`.
+- **F2 (épisodes) :**
+  - critère choisi par l'utilisateur : élément, seuil en dixièmes (valeur >= seuil), durée minimale ;
+  - un jour compte s'il a une observation sans `qflag` qui dépasse le seuil ; tout jour absent, invalide ou sous le seuil coupe l'épisode ;
+  - les épisodes sont calculés sur des dates continues : un épisode du 30 décembre au 2 janvier est un seul épisode ; seuls les jours de la période demandée sont pris en compte ;
+  - intensité : dépassement moyen au-dessus du seuil et valeur maximale ; tri canonique : station puis date de début.
+- **F3 (mois anormaux, TMAX ou TMIN) :**
+  - un mois-station est éligible si au moins 80 % de ses jours ont une observation valide ;
+  - la normale d'une station pour un mois calendaire est la moyenne de ses mois éligibles sur 1991–2020, si au moins 24 années sur 30 le sont (80 %) ;
+  - l'anomalie d'une zone est la moyenne des anomalies par maille de 0,5°, puis la moyenne des mailles : les régions denses en stations ne pèsent pas plus que les autres ;
+  - un mois n'est classé que s'il couvre au moins 5 mailles ; classement par valeur absolue décroissante, puis année et mois.
+- **Arrondi :** les calculs restent exacts (entiers en SQL, fractions en Python) et ne sont arrondis qu'à la sortie, à 0,01, « moitié loin de zéro » comme `round(numeric, 2)` de PostgreSQL. Le `round()` de Python arrondit au pair et part d'un flottant : il donnait 13,12 au lieu de 13,13 sur 3 épisodes.
+- **Pourquoi :** des définitions fixées tôt permettent d'écrire les services et leur vérification en parallèle ; 80 % de jours et 80 % d'années sont des seuils simples, proches des pratiques climatologiques (normales sur 30 ans) ; moyenner par maille répond à l'exigence du sujet sur la densité de stations non uniforme.
+- **Vérifié le 2026-11-08 (scripts sur les fichiers NOAA, comparés à des requêtes SQL sur la base locale) :**
+  - F2, Espagne, TMAX >= 40,0 °C pendant au moins 3 jours, 2015–2024 : 220 épisodes, identiques en SQL. Le plus long : SPE00120503, du 7 au 17 juillet 2022 (11 jours) ;
+  - F2, Allemagne, PRCP >= 5,0 mm pendant au moins 3 jours : 17 340 épisodes, dont 114 à cheval sur deux années, chacun compté une seule fois (par ex. GM000004155, du 29 décembre 2018 au 14 janvier 2019) ;
+  - F3, Allemagne, TMAX, 2015–2024 : 120 mois classés, les 8 premiers identiques en SQL sur `monthly_stats` (décembre 2015 +5,16 °C, septembre 2023 +4,79 °C, février 2024 +4,72 °C, juin 2019 +4,64 °C…).
+- **Reste à faire :** F3 sur PRCP (il faudra séparer P et T, aujourd'hui comptés ensemble dans `monthly_stats.n_pt`) ; F4 ; une comparaison automatique entre la sortie des services et celle des scripts, une fois les services écrits.
+
+## D18 — E3 : configurations, charges et prédiction
+
+- **Statut :** adoptée, 2026-11-08. Prédiction complète : `docs/e3_prediction.md`, écrite avant toute mesure et à envoyer à l'enseignante avant les mesures.
+- **Décision :**
+  - configurations comparées : local (PostgreSQL seul) et Citus-2 (1 coordinateur + 2 workers) ;
+  - charge « routine » : F1 sur une station au hasard et une fenêtre de 30 jours ; charge « régionale » : F2 et F3 sur un pays entier, 2015–2024 ;
+  - séries de 200 requêtes avec graine fixe et une part de régionales de 0, 1, 5, 25, 50 et 100 % ; 5 répétitions après échauffement.
+- **Prédiction :** le local gagne sur la routine seule (surcoût fixe du coordinateur) ; Citus-2 gagne sur les études régionales grâce à F2 ; dans un mélange, le basculement se fait vers 1 à 5 % de régionales, car elles dominent le temps total.
+- **Pourquoi ces deux configurations :** ce sont celles où l'écart attendu est le plus net et le plus facile à expliquer ; la configuration à 3 workers sur le même poste ajoute surtout de la concurrence pour le processeur et la mémoire, et sera mesurée dans E2.

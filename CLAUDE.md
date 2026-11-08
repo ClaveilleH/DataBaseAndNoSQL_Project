@@ -47,6 +47,7 @@ Schéma : `sql/schema.sql` (local et distribué), puis `sql/distribute.sql` (Cit
   l'ordre des additions change entre local et distribué.
 - Toute clé primaire ou contrainte d'unicité contient `station` (exigence Citus).
 - Calculs non décomposables (médiane, percentiles) : station par station.
+- Définitions de F2 et F3 : D17, avec `verify/` comme référence exécutable. Arrondi à la sortie seulement, à 0,01, comme `round(numeric, 2)` de PostgreSQL.
 
 ## Règles de données (ne pas déroger sans le noter dans `docs/decisions.md`)
 
@@ -66,6 +67,8 @@ docker compose -f deploy/local/compose.yml up -d  # PostgreSQL local, port 5440
 docker exec -i weatherscope-local-postgres-1 psql -U weatherscope -d weatherscope < sql/schema.sql  # schéma (base vide)
 uv run python ingest/download.py                  # fichiers by_station des 774 stations -> data/raw/by_station/
 uv run python -m ingest.load                      # import (initial ou F5), idempotent ; fichiers en argument possibles
+uv run python -m verify.f2_episodes --zone SP --start 2015-01-01 --end 2024-12-31 --threshold 400 --min-days 3
+uv run python -m verify.f3_anomalies --zone GM --years 2015 2024   # vérification indépendante (fichiers NOAA, sans base)
 uv run pytest                                     # tests
 cd docs/rapport && make                           # rapport PDF
 ```
