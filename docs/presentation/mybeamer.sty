@@ -1,0 +1,95 @@
+% Style de la présentation : couleurs, page de titre, pied de page, blocs, outils
+\ProvidesPackage{mybeamer}
+\mode<presentation>
+
+% -------------------- Couleurs --------------------
+\RequirePackage{xcolor}
+\definecolor{accent}{RGB}{50,134,255}   % bleu principal
+\definecolor{accent2}{RGB}{100,170,255} % bleu clair (liens, sous-sections)
+\definecolor{dark}{RGB}{40,40,40}       % texte
+\definecolor{yellow}{RGB}{255,204,0}
+\definecolor{green}{RGB}{50,153,51}
+\definecolor{red}{RGB}{255,51,51}
+
+\setbeamertemplate{navigation symbols}{}
+\setbeamercolor{frametitle}{fg=accent}
+\setbeamercolor{structure}{fg=accent}
+
+% -------------------- Liens --------------------
+\hypersetup{colorlinks=true, linkcolor=accent, urlcolor=accent2}
+
+% -------------------- Page de titre --------------------
+\setbeamertemplate{title page}{%
+  \vbox{%
+    \vspace{1em}
+    \begin{centering}
+      {\usebeamerfont{title}\Huge\inserttitle}\par\vspace{0.8em}
+      {\usebeamerfont{subtitle}\large\insertsubtitle}\par\vspace{1.2em}
+      {\usebeamerfont{author}\insertauthor}\par\vspace{0.3em}
+      {\usebeamerfont{date}\insertdate}\par
+    \end{centering}
+  }
+}
+
+% -------------------- Pied de page : auteur | titre | n° --------------------
+\setbeamercolor{author in head/foot}{fg=white,bg=accent}
+\setbeamercolor{title in head/foot}{fg=white,bg=accent}
+\setbeamercolor{page in head/foot}{fg=white,bg=accent}
+\setbeamertemplate{footline}{%
+  \leavevmode%
+  \hbox{%
+    \begin{beamercolorbox}[wd=0.33\paperwidth,ht=2.5ex,dp=1ex,left]{author in head/foot}%
+      \hspace{1ex}\insertshortauthor
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[wd=0.34\paperwidth,ht=2.5ex,dp=1ex,center]{title in head/foot}%
+      \insertshorttitle
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[wd=0.33\paperwidth,ht=2.5ex,dp=1ex,right]{page in head/foot}%
+      \insertframenumber{} / \inserttotalframenumber\hspace{1ex}
+    \end{beamercolorbox}}%
+}
+
+% -------------------- Blocs --------------------
+\setbeamertemplate{blocks}[rounded]
+\setbeamercolor{block title}{fg=white,bg=accent}
+\setbeamercolor{block body}{fg=dark,bg=yellow!15}
+
+% -------------------- Sommaire --------------------
+\setbeamercolor{section in toc}{fg=accent}
+\setbeamercolor{subsection in toc}{fg=accent2}
+\setbeamerfont{section in toc}{series=\bfseries}
+\setbeamerfont{subsection in toc}{size=\small}
+\setbeamertemplate{section in toc}[sections numbered]
+\setbeamertemplate{subsection in toc}[ball unnumbered]
+
+% -------------------- Code --------------------
+\RequirePackage{listings}
+\lstset{basicstyle=\ttfamily\small, breaklines=true, frame=single}
+\newcommand{\code}[1]{\texttt{#1}}
+
+% -------------------- Pseudocode (en français) --------------------
+\RequirePackage{algorithm}
+\RequirePackage[noend]{algpseudocode}
+\algrenewcommand\algorithmicrequire{\textbf{Entrée :}}
+\algrenewcommand\algorithmicensure{\textbf{Sortie :}}
+\algrenewcommand\algorithmicfor{\textbf{pour}}
+\algrenewcommand\algorithmicforall{\textbf{pour chaque}}
+\algrenewcommand\algorithmicdo{\textbf{faire}}
+\algrenewcommand\algorithmicwhile{\textbf{tant que}}
+\algrenewcommand\algorithmicif{\textbf{si}}
+\algrenewcommand\algorithmicthen{\textbf{alors}}
+\algrenewcommand\algorithmicelse{\textbf{sinon}}
+\algrenewcommand\algorithmicend{\textbf{fin}}
+\algrenewcommand\algorithmicreturn{\textbf{retourner}}
+
+% -------------------- Schémas --------------------
+\RequirePackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,calc}
+
+% -------------------- Divers --------------------
+\RequirePackage[normalem]{ulem}
+% Texte souligné en rouge
+\DeclareRobustCommand{\reduline}[1]{\uline{\textcolor{red}{\phantom{#1}}}\llap{#1}}
+
+\mode<all>
+\endinput

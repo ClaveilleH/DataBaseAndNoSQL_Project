@@ -1,0 +1,405 @@
+\documentclass[aspectratio=169]{pres}
+
+\title[WeatherScope]{WeatherScope}
+\subtitle{Observatoire météo historique sur NOAA GHCN-Daily\\Allemagne et Espagne, local puis distribué}
+\author[Claveille, Jules, Diallo]{CLAVEILLE Hugo, JULES Stevenson, DIALLO Mamadou Ougailou\\[0.3em]\small M2 SLCD -- Big Data and NoSQL}
+\date{10 novembre 2026}
+
+% Résultats à compléter (distribué complet, E1-E4)
+\newcommand{\afaire}[1]{\textcolor{red}{\textbf{[À compléter : #1]}}}
+\lstdefinestyle{sql}{language=SQL, basicstyle=\ttfamily\scriptsize, keywordstyle=\color{accent}\bfseries,
+  commentstyle=\color{gray}\itshape, morekeywords={FILTER,OVER,PARTITION,CONFLICT,DISTINCT,ILIKE}}
+
+\begin{document}
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+\begin{frame}{Plan}
+  \setcounter{tocdepth}{1}
+  \tableofcontents
+\end{frame}
+
+%====================================================
+\section{Périmètre et données}
+
+\begin{frame}{Le périmètre}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \begin{block}{Ce qu'on a enregistré}
+        \begin{itemize}
+          \item \textbf{Zones :} Allemagne (\code{GM}) et Espagne (\code{SP}), préfixe pays de l'identifiant NOAA
+          \item \textbf{Étude :} 2015--2024
+          \item \textbf{Référence :} 1991--2020 (normale sur 30 ans)
+          \item \textbf{Éléments :} TMAX, TMIN, PRCP
+        \end{itemize}
+      \end{block}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{block}{Volume chargé (1991--2024)}
+        \begin{itemize}
+          \item 774 stations (589 GM, 185 SP)
+          \item \textbf{21,46 M} observations réelles
+          \item 2,9 Go en base
+        \end{itemize}
+      \end{block}
+      \small
+      \textbf{Pourquoi :} deux climats contrastés ; l'étude seule (7,14 M) n'atteint pas les 10 M d'E1, la référence est nécessaire à F3 et F4.
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Provenance et qualité}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{block}{Provenance}
+        \begin{itemize}
+          \item Manifeste versionné : URL, date, taille, \textbf{SHA-256} de chaque fichier
+          \item Table \code{batches} : un lot par import
+          \item Chaque observation garde son lot
+        \end{itemize}
+      \end{block}
+      \begin{block}{Règle de validité}
+        \code{qflag} vide et \code{mflag} $\neq$ P\\[0.2em]
+        \small Trace (T) = 0 mm, comptée à part.\\
+        Invalide : stockée, comptée, jamais utilisée.
+      \end{block}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \setbeamercolor{block title}{fg=white,bg=red!80!black}
+      \begin{block}{Anomalies trouvées}
+        \small
+        \begin{itemize}
+          \item 1\,403 observations avec \code{qflag}, 267 traces, aucune P
+          \item Heure d'observation vide pour 100\,\% des lignes
+          \item 98\,\% des valeurs viennent d'ECA\&D (\code{sflag} E)
+          \item Espagne 2024 : environ 24\,\% d'observations en moins
+          \item 9 stations espagnoles avec une longitude de signe faux : documentées, pas corrigées
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+%====================================================
+\section{Architecture et modèle}
+
+\begin{frame}{Choix technologique : PostgreSQL, puis Citus}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \begin{block}{Pourquoi}
+        \begin{itemize}
+          \item Données tabulaires de forme fixe
+          \item F2--F4 en quelques lignes avec les fonctions de fenêtre SQL
+          \item \textbf{Le même SQL} en local et sur Citus : seul \code{DATABASE\_URL} change
+          \item \code{EXPLAIN} montre les workers contactés
+          \item Échec explicite si un worker manque
+        \end{itemize}
+      \end{block}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \setbeamercolor{block title}{fg=white,bg=gray}
+      \begin{block}{Écartés}
+        \small
+        \begin{itemize}
+          \item \textbf{MongoDB :} F2--F4 en longs pipelines d'agrégation, trop risqué dans le délai
+          \item \textbf{Cassandra, ClickHouse :} jamais pratiqués
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Chaîne de traitement}
+  \centering
+  \begin{tikzpicture}[node distance=0.9cm and 0.8cm,
+      box/.style={draw=accent, fill=accent!10, rounded corners, minimum width=2.4cm, minimum height=1cm, align=center, font=\small},
+      db/.style={box, cylinder, shape border rotate=90, aspect=0.15, minimum height=1.3cm},
+      chk/.style={box, draw=green, fill=green!10}]
+    \node[box] (noaa) {Fichiers NOAA\\\footnotesize by\_station, by\_year};
+    \node[box, right=of noaa] (dl) {download.py\\\footnotesize manifeste SHA-256};
+    \node[box, right=of dl] (load) {load.py\\\footnotesize chargement et F5};
+    \node[db, right=of load] (db) {PostgreSQL\\ou Citus};
+    \node[box, below=1.2cm of db] (svc) {Services F1--F4\\\footnotesize ligne de commande};
+    \node[chk, below=1.2cm of dl] (ver) {verify/\\\footnotesize relit les fichiers};
+    \node[chk, below=1.2cm of load] (cmp) {compare.py};
+    \draw[-Stealth, thick] (noaa) -- (dl);
+    \draw[-Stealth, thick] (dl) -- (load);
+    \draw[-Stealth, thick] (load) -- (db);
+    \draw[-Stealth, thick] (db) -- (svc);
+    \draw[-Stealth, thick, green] (noaa) |- (ver);
+    \draw[-Stealth, thick, green] (ver) -- (cmp);
+    \draw[-Stealth, thick, green] (svc) -- (cmp);
+  \end{tikzpicture}
+  \vspace{0.6em}
+
+  \small Un seul chargeur pour le chargement initial et pour F5. La vérification n'utilise ni la base ni le code des services.
+\end{frame}
+
+\begin{frame}{Modèle de données}
+  \small
+  \begin{table}
+    \centering
+    \begin{tabular}{|l|p{6cm}|l|}
+      \hline
+      \textbf{Table} & \textbf{Contenu} & \textbf{Sous Citus} \\ \hline
+      \code{observations} & une ligne par mesure ; clé (station, élément, date) ; valeur entière en dixièmes, flags, lot & répartie \\ \hline
+      \code{monthly\_stats} & par station, élément, mois : comptes, somme, min, max ; tenue à jour par F5 & répartie \\ \hline
+      \code{observations\_history} & versions remplacées par F5 & répartie \\ \hline
+      \code{stations} & métadonnées, maille de 0,5° & copiée partout \\ \hline
+      \code{batches} & lots d'import, fichiers, SHA-256 & copiée partout \\ \hline
+    \end{tabular}
+  \end{table}
+  \begin{block}{Calculs exacts}
+    Entiers et \code{numeric}, arrondi à 0,01 seulement à la sortie : les sommes ne dépendent pas de l'ordre des additions, donc local et distribué donnent \textbf{exactement} le même résultat.
+  \end{block}
+\end{frame}
+
+\begin{frame}{Partie I : deux choix de conception mesurés}
+  \small
+  \begin{table}
+    \centering
+    \begin{tabular}{|l|r|r|l|}
+      \hline
+      \textbf{Mesure (médiane)} & \textbf{Retenu} & \textbf{Alternative} & \textbf{Décision} \\ \hline
+      F3 : \code{monthly\_stats} / observations brutes & 0,59 s & 5,81 s & agrégats gardés (\textbf{10$\times$}) \\ \hline
+      F1 : une ligne par mesure / par jour & 0,010 s & 0,016 s & \\
+      F2 : une ligne par mesure / par jour & 0,10 s & 0,21 s & table large \\
+      TMAX $-$ TMIN le même jour & 2,04 s & 0,27 s & écartée \\
+      Taille & 1 & 1/3,3 & \\ \hline
+    \end{tabular}
+  \end{table}
+  \textbf{Table large} (une ligne par station et par jour) : 3,3 fois plus petite et 7 fois plus rapide pour comparer TMAX et TMIN, mais F1 et F2, les services du sujet, sont 1,5 à 2 fois plus lents. Résultats identiques vérifiés dans chaque cas.
+\end{frame}
+
+%====================================================
+\section{Services}
+
+\begin{frame}{Les services et leurs définitions}
+  \small
+  \begin{table}
+    \centering
+    \begin{tabular}{|l|p{11cm}|}
+      \hline
+      \textbf{F1} & Zone = pays et/ou rectangle ; résumé mensuel d'une station : jours attendus, valides, invalides, traces, disponibilité, moyenne ou cumul \\ \hline
+      \textbf{F2} & Jours consécutifs avec valeur valide $\geq$ seuil ; un jour absent ou invalide coupe ; décembre--janvier = un seul épisode \\ \hline
+      \textbf{F3} & Mois à $\geq$ 80\,\% de jours valides ; normale sur $\geq$ 24 années de 1991--2020 ; moyenne par maille de 0,5° puis entre mailles ($\geq$ 5) \\ \hline
+      \textbf{F4} & Inhabituel = au-dessus du quantile 95\,\% de la station pour ce mois ; jour régional = $\geq$ 3 mailles \textbf{et} $\geq$ 25\,\% des mailles qui rapportent \\ \hline
+      \textbf{F5} & Écrase et archive ; réimporter ne change rien ; lot contradictoire refusé \\ \hline
+    \end{tabular}
+  \end{table}
+  \textbf{Mailles :} les stations ne sont pas réparties uniformément ; compter des mailles évite qu'une ville dense pèse plus qu'une région entière.
+\end{frame}
+
+\begin{frame}[fragile]{F2 : les jours consécutifs en une requête}
+  \begin{columns}[T]
+    \begin{column}{0.6\textwidth}
+\begin{lstlisting}[style=sql]
+WITH days AS (  -- jours valides >= seuil
+  SELECT station, date FROM observations
+  WHERE element = 'TMAX' AND value >= 400
+), runs AS (    -- date - rang : constant
+  SELECT station, date, date - (row_number()
+    OVER (PARTITION BY station ORDER BY date)
+  )::int AS grp
+  FROM days)
+SELECT station, min(date), max(date), count(*)
+FROM runs GROUP BY station, grp
+HAVING count(*) >= 3
+\end{lstlisting}
+    \end{column}
+    \begin{column}{0.36\textwidth}
+      \small
+      \begin{tabular}{|l|c|l|}
+        \hline
+        \textbf{date} & \textbf{rang} & \textbf{date $-$ rang} \\ \hline
+        7 juil. & 1 & 6 juil. \\
+        8 juil. & 2 & 6 juil. \\
+        9 juil. & 3 & 6 juil. \\ \hline
+        11 juil. & 4 & \textcolor{red}{7 juil.} \\
+        12 juil. & 5 & \textcolor{red}{7 juil.} \\ \hline
+      \end{tabular}
+      \vspace{0.5em}
+
+      Le 10 manque : nouveau groupe.\\[0.4em]
+      Découpé par station, la clé de répartition : chaque worker calcule seul.
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{F5 : un import idempotent}
+  \begin{columns}[T]
+    \begin{column}{0.56\textwidth}
+\begin{lstlisting}[style=sql]
+INSERT INTO observations (...)
+SELECT DISTINCT ...
+FROM observations_staging
+ON CONFLICT (station, element, date)
+DO UPDATE SET value = excluded.value, ...
+WHERE (observations.value, ...)
+  IS DISTINCT FROM (excluded.value, ...)
+\end{lstlisting}
+    \end{column}
+    \begin{column}{0.4\textwidth}
+      \small
+      \begin{enumerate}
+        \item \code{COPY} vers une table de chargement
+        \item Lot contradictoire ? refusé
+        \item Versions remplacées archivées
+        \item Écriture du nouveau et du modifié
+        \item \code{monthly\_stats} recalculée pour les mois touchés
+      \end{enumerate}
+      Tout dans une transaction.
+    \end{column}
+  \end{columns}
+  \begin{block}{Vérifié}
+    Réimport des 21,46 M lignes : 0 nouvelle, 0 modifiée. Fichier 2025 complet : 697\,993 lignes en 35 s, nouvelles stations ajoutées.
+  \end{block}
+\end{frame}
+
+\begin{frame}{Traçabilité et vérification}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{block}{Traçabilité}
+        \small
+        Chaque résultat contient un champ \code{sources}.\\
+        La commande \code{trace} le transforme en liste d'observations : station, date, valeur, flags, lot d'import, donc fichier et SHA-256.
+      \end{block}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \setbeamercolor{block title}{fg=white,bg=green}
+      \begin{block}{Vérification indépendante}
+        \small
+        Scripts Python qui relisent les fichiers NOAA, sans la base.\\
+        \code{verify/compare.py} : 4 cas, \textbf{0 écart}, classements compris (F2 : 220 et 16\,126 épisodes).
+      \end{block}
+    \end{column}
+  \end{columns}
+  \vspace{0.5em}
+  \small
+  \textbf{Exemples :} F3 Allemagne décembre 2015 +5,16 °C ; F2 SPE00120503, 11 jours $\geq$ 40 °C en juillet 2022 ; F4 Allemagne 166 événements, le plus sévère du 1\textsuperscript{er} au 12 novembre 2015.
+\end{frame}
+
+%====================================================
+\section{Distribution}
+
+\begin{frame}{Répartition par hachage de la station}
+  \begin{columns}[c]
+    \begin{column}{0.48\textwidth}
+      \centering
+      \begin{tikzpicture}[node distance=0.8cm and 0.1cm,
+          box/.style={draw=accent, fill=accent!10, rounded corners, minimum width=2cm, minimum height=0.9cm, align=center, font=\small}]
+        \node[box] (app) {Application};
+        \node[box, below=of app] (co) {Coordinateur};
+        \node[box, below left=of co] (w1) {Worker 1\\\footnotesize 16 shards};
+        \node[box, below right=of co] (w2) {Worker 2\\\footnotesize 16 shards};
+        \draw[-Stealth, thick] (app) -- (co);
+        \draw[-Stealth, thick] (co) -- (w1);
+        \draw[-Stealth, thick] (co) -- (w2);
+      \end{tikzpicture}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \small
+      \begin{itemize}
+        \item Une station = un worker : \textbf{F1 contacte un seul worker} (\code{Task Count: 1})
+        \item F2 et F5 calculés entièrement sur chaque worker
+        \item F3, F4 : 32 tâches, fusion par le coordinateur
+        \item Tables liées colocalisées ; \code{stations}, \code{batches} copiées partout
+        \item Écartés : par date (épisodes coupés), par pays (2 valeurs)
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Comparaison et panne}
+  \begin{block}{Cluster de test (1 coordinateur + 2 workers, 65 stations, 1,8 M observations)}
+    \begin{itemize}
+      \item 12 commandes : sortie \textbf{identique octet pour octet} au local
+      \item Worker arrêté : F1 sur une station de l'autre worker répond ; F3 affiche « ÉCHEC », aucun résultat partiel, code 2
+    \end{itemize}
+  \end{block}
+  \setbeamercolor{block title}{fg=white,bg=red!80!black}
+  \begin{block}{Données complètes}
+    \afaire{déploiement 3 workers, comparaison automatique sur les 21,46 M lignes, répartition par worker.}
+  \end{block}
+\end{frame}
+
+%====================================================
+\section{Expériences}
+
+\begin{frame}{E1 et E2}
+  \begin{block}{E1 -- Volume}
+    \afaire{3 tailles (7,14 M, intermédiaire, 21,46 M) : temps de chargement, taille, F1 et F3.}
+  \end{block}
+  \begin{block}{E2 -- Local contre distribué}
+    \afaire{local, Citus-2, Citus-3 sur F1 (une station) et F2/F3 (un pays).}
+  \end{block}
+\end{frame}
+
+\begin{frame}{E3 -- Charge variable : prédiction déposée avant les mesures}
+  \small
+  Charge de 200 requêtes : routine (F1, une station) et étude régionale (F2/F3, un pays), de 0 à 100\,\% de régional.
+  \begin{enumerate}
+    \item \textbf{Routine seule :} le local gagne (surcoût fixe du coordinateur, 1,3 à 2$\times$)
+    \item \textbf{Régional seul :} Citus-2 gagne grâce à F2 (32 tâches en parallèle, 1,5 à 3$\times$)
+    \item \textbf{Mélange :} bascule tôt, vers 1 à 5\,\% de régional
+  \end{enumerate}
+  \textbf{Risques :} mémoire partagée, un seul poste, plan d'exécution local.
+  \begin{block}{Mesures}
+    \afaire{résultats et confrontation avec la prédiction.}
+  \end{block}
+\end{frame}
+
+\begin{frame}{E4 -- Limite}
+  \begin{block}{Piste identifiée}
+    F4 recalcule les quantiles de référence (30 ans) à chaque requête : 29 s sur l'Allemagne.\\
+    Une table de seuils par station et mois, tenue à jour par F5, les rendrait instantanés.
+  \end{block}
+  \afaire{mesure si réalisée.}
+\end{frame}
+
+%====================================================
+\section{Démonstration et limites}
+
+\begin{frame}[fragile]{Démonstration (5 minutes)}
+  \small
+  \begin{enumerate}
+    \item \textbf{F1} : chercher, puis résumer une station
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize,frame=none]
+ws stations -z SP --name madrid
+ws station SP000003195 --start 2022-07-01 --end 2022-07-31
+\end{lstlisting}
+    \item \textbf{F2, F3} : épisodes de chaleur, mois anormaux
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize,frame=none]
+ws episodes -z SP --start 2015-01-01 --end 2024-12-31 --threshold 40
+ws anomalies -z GM -z SP --element TMAX
+\end{lstlisting}
+    \item \textbf{Traçabilité} : les jours d'un épisode
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize,frame=none]
+ws trace --station SPE00120503 --element TMAX --start 2022-07-07 --end 2022-07-17
+\end{lstlisting}
+    \item \textbf{F5} : importer un lot, relancer F3 ; \textbf{Citus} : \code{-{}-explain}
+  \end{enumerate}
+  \code{ws} = \code{uv run python -m weatherscope.cli}
+\end{frame}
+
+\begin{frame}{Limites}
+  \begin{itemize}
+    \item Un seul poste : plusieurs conteneurs ne valent pas un vrai cluster de machines
+    \item Pas de réplication : une panne de worker bloque les requêtes qui en ont besoin
+    \item F4 lent (quantiles recalculés)
+    \item Métadonnées NOAA laissées telles quelles (longitudes fausses)
+    \item Interface en ligne de commande seulement
+  \end{itemize}
+  \vspace{0.5em}
+  \small Toutes les décisions, leurs raisons et les alternatives : \code{docs/decisions.md} (D1--D26).
+\end{frame}
+
+%====================================================
+\begin{frame}{Merci}
+  \centering\Large Merci pour votre attention !\\[1em]
+  \normalsize Questions et défi en direct
+\end{frame}
+
+\end{document}
