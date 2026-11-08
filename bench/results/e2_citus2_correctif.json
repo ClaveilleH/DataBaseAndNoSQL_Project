@@ -1,0 +1,166 @@
+{
+ "config": "citus2",
+ "environment": {
+  "date": "2026-11-08 22:52:01",
+  "os": "Linux-6.8.0-147-generic-x86_64-with-glibc2.39",
+  "python": "3.14.2",
+  "cpu_threads": 16,
+  "docker": "29.9.3",
+  "docker_cpus": 16,
+  "docker_mem_gb": 13.5,
+  "server": {
+   "postgres": "PostgreSQL 17.2 (Debian 17.2-1.pgdg120+1)",
+   "shared_buffers": "256MB",
+   "work_mem": "4MB",
+   "parallel_workers": "2",
+   "citus": "Citus 13.0.3"
+  },
+  "workers": [
+   "w1",
+   "w2"
+  ]
+ },
+ "protocol": {
+  "runs": 7,
+  "warmup": 1,
+  "cache": "chaud après 1 exécution d'échauffement ; la durée de cette 1re exécution est notée (first_run_s)"
+ },
+ "queries": {
+  "étroite : F1, une station, un an": {
+   "runs": 7,
+   "median_s": 0.0051,
+   "mean_s": 0.0052,
+   "stdev_s": 0.0003,
+   "iqr_s": 0.0,
+   "min_s": 0.005,
+   "max_s": 0.0059,
+   "all_s": [
+    0.0051,
+    0.0051,
+    0.0051,
+    0.0051,
+    0.0059,
+    0.005,
+    0.005
+   ],
+   "first_run_s": 0.0075,
+   "warmup_runs": 1,
+   "result_digest": "d8a5d29a45904ca7"
+  },
+  "agrégation longue : TMAX annuel par zone, 1991-2024": {
+   "runs": 7,
+   "median_s": 1.7706,
+   "mean_s": 1.774,
+   "stdev_s": 0.0142,
+   "iqr_s": 0.0029,
+   "min_s": 1.7607,
+   "max_s": 1.805,
+   "all_s": [
+    1.7706,
+    1.805,
+    1.7607,
+    1.7716,
+    1.7722,
+    1.7682,
+    1.7697
+   ],
+   "first_run_s": 1.7715,
+   "warmup_runs": 1,
+   "result_digest": "ddf19c84bbbe951b"
+  },
+  "multi-stations : F2, Allemagne, TMAX >= 30 °C, 10 ans": {
+   "runs": 7,
+   "median_s": 0.5606,
+   "mean_s": 0.5613,
+   "stdev_s": 0.0061,
+   "iqr_s": 0.0075,
+   "min_s": 0.554,
+   "max_s": 0.5716,
+   "all_s": [
+    0.5662,
+    0.5572,
+    0.5566,
+    0.554,
+    0.5606,
+    0.5716,
+    0.5626
+   ],
+   "first_run_s": 0.5668,
+   "warmup_runs": 1,
+   "result_digest": "31031a08eca18712"
+  },
+  "multi-stations : F2, Espagne, TMAX >= 35 °C, 10 ans": {
+   "runs": 7,
+   "median_s": 0.5185,
+   "mean_s": 0.5174,
+   "stdev_s": 0.0064,
+   "iqr_s": 0.0076,
+   "min_s": 0.5088,
+   "max_s": 0.5272,
+   "all_s": [
+    0.5185,
+    0.5222,
+    0.5272,
+    0.519,
+    0.5151,
+    0.5088,
+    0.511
+   ],
+   "first_run_s": 0.517,
+   "warmup_runs": 1,
+   "result_digest": "050dc63c213d2f0e"
+  },
+  "anomalies : F3, deux pays, TMAX": {
+   "runs": 7,
+   "median_s": 0.4428,
+   "mean_s": 0.4451,
+   "stdev_s": 0.0087,
+   "iqr_s": 0.0112,
+   "min_s": 0.4378,
+   "max_s": 0.4578,
+   "all_s": [
+    0.4378,
+    0.439,
+    0.4428,
+    0.4385,
+    0.4428,
+    0.4571,
+    0.4578
+   ],
+   "first_run_s": 0.5151,
+   "warmup_runs": 1,
+   "result_digest": "4ec07174362ff44c"
+  },
+  "multi-stations : F4, Espagne, PRCP, 10 ans": {
+   "runs": 3,
+   "median_s": 3.5076,
+   "mean_s": 3.5743,
+   "stdev_s": 0.1627,
+   "iqr_s": 0.1521,
+   "min_s": 3.4555,
+   "max_s": 3.7597,
+   "all_s": [
+    3.4555,
+    3.5076,
+    3.7597
+   ],
+   "first_run_s": 3.5089,
+   "warmup_runs": 1,
+   "result_digest": "a80ccd139210c5d3"
+  }
+ },
+ "placement": [
+  {
+   "worker": "w1",
+   "shards": 16,
+   "observations_mb": "1397.5"
+  },
+  {
+   "worker": "w2",
+   "shards": 16,
+   "observations_mb": "1721.3"
+  }
+ ],
+ "observations": 21460068,
+ "f1_task_count": 1
+}

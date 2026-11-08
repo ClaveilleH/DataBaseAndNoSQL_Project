@@ -34,6 +34,7 @@ Statuts : **adoptée** (validée par l'équipe), **proposée** (à valider), **r
 | D24 | 2026-11-08 | Rapport : strict minimum, sections du sujet, parties distribuées à compléter | Adoptée |
 | D25 | 2026-11-08 | Services vérifiés sur un cluster Citus de test : résultats identiques, panne explicite | Adoptée |
 | D26 | 2026-11-08 | Partie I mesurée : monthly_stats gardée, table large écartée | Adoptée |
+| D27 | 2026-11-09 | F3 et F4 réécrits pour le distribué : calculs par station sur les workers, seuils de F4 calculés une fois | Adoptée |
 
 ---
 
@@ -332,3 +333,19 @@ Statuts : **adoptée** (validée par l'équipe), **proposée** (à valider), **r
 - **Table large (une ligne par station et par jour) :** 7,91 M lignes et 868 Mo contre 21,46 M lignes et 2 827 Mo ; construite en 119 s. F1 (une station, 10 ans) 0,016 s contre 0,010 s ; F2 (Espagne, TMAX >= 40 °C) 0,214 s contre 0,104 s ; amplitude TMAX − TMIN > 20 °C le même jour 0,27 s contre 2,04 s.
 - **Décision :** garder une ligne par mesure : les services lisent un élément à la fois, que la clé (station, élément, date) cible directement ; F5 reste simple (une ligne = une observation NOAA). La table large n'est meilleure que pour croiser plusieurs éléments d'un même jour, ce qu'aucun service ne fait. Sa taille 3,3 fois plus faible serait un argument si la base ne tenait plus en mémoire.
 - La table large a été supprimée de la base après la mesure ; `bench/partie1.py` la reconstruit.
+
+## D27 — F3 et F4 réécrits pour le distribué
+
+- **Statut :** adoptée, 2026-11-09. Code : `weatherscope/services/f3_anomalies.py`, `weatherscope/services/f4_regional.py`, option `--explain` de `events` dans `weatherscope/cli.py`.
+- **Problème :** les premières mesures E2 (poste Windows de l'équipe, 8 threads, Docker 7,6 Go) donnaient sur Citus-2 F3 en 63 s (1,5 s en local) et F4 en 106 s (26 s en local), résultats identiques par ailleurs.
+- **Causes (plans `EXPLAIN` sur la base complète) :**
+  - F3 : la CTE des mois éligibles, utilisée deux fois (normales et écarts), devenait un « Distributed Subplan » : 18 Mo de lignes mensuelles rapatriés sur le coordinateur, écrits sur son disque, puis relus pour calculer seul les normales et la jointure ;
+  - F4 : les seuils (quantile de 30 ans de mesures par station et par mois, la partie la plus lourde) étaient calculés deux fois par requête, pour les comptes par jour puis pour les preuves.
+- **Correction :**
+  - F3 : la normale de chaque station est calculée par une fonction de fenêtre découpée par station (`avg(...) FILTER (...) OVER (PARTITION BY station, month)`), donc sur chaque worker ; le coordinateur ne reçoit que les anomalies par maille (2,4 Mo au lieu de 18 Mo) ;
+  - F4 : une première requête calcule les seuils, regroupée par station donc entièrement sur les workers, et renvoie une ligne par station et par mois ; ces seuils sont passés en tableaux aux requêtes des comptes par jour et des preuves, que Citus exécute sur les workers.
+- **Résultats identiques :** F3 sur 9 cas (GM, SP, GM+SP × TMAX, TMIN, PRCP) et F4 sur 4 cas (dont un rectangle et un quantile de 90 %) : sorties identiques avant et après, en local et sur Citus ; `tests/test_local_vs_citus.py` 14/14 sur la base complète ; `verify.compare` OK.
+- **Gain (poste Linux, 16 threads, 13 Go ; base complète) :** F3 sur Citus-2 1,2 s → 0,3 s ; F4 Allemagne TMAX 22,6 s → 7,5 s en local et 7,8 s → 6,3 s sur Citus-2.
+- **Mesures refaites avec le code corrigé, sur ce poste :** E2 local, Citus-2, Citus-3 et E3 local, Citus-2, même protocole que l'équipe (`bench/results/*_correctif.json`). Les résultats de l'équipe (sans suffixe) sont gardés : ils montrent le problème. E1 et la panne ne dépendent pas de F3 et F4 corrigés et ne sont pas refaits.
+- **Pourquoi pas plus :** dans F4, les comptes par jour et par maille (17 Mo) restent fusionnés sur le coordinateur : les stations d'une maille sont réparties sur plusieurs workers par le hachage de la station. Une table de seuils tenue à jour par F5 supprimerait le calcul des quantiles (piste E4).
+

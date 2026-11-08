@@ -1,0 +1,148 @@
+{
+ "config": "local",
+ "environment": {
+  "date": "2026-11-08 22:51:18",
+  "os": "Linux-6.8.0-147-generic-x86_64-with-glibc2.39",
+  "python": "3.14.2",
+  "cpu_threads": 16,
+  "docker": "29.9.3",
+  "docker_cpus": 16,
+  "docker_mem_gb": 13.5,
+  "server": {
+   "postgres": "PostgreSQL 17.2 (Debian 17.2-1.pgdg120+1)",
+   "shared_buffers": "2GB",
+   "work_mem": "4MB",
+   "parallel_workers": "2"
+  }
+ },
+ "protocol": {
+  "runs": 7,
+  "warmup": 1,
+  "cache": "chaud après 1 exécution d'échauffement ; la durée de cette 1re exécution est notée (first_run_s)"
+ },
+ "queries": {
+  "étroite : F1, une station, un an": {
+   "runs": 7,
+   "median_s": 0.0039,
+   "mean_s": 0.0039,
+   "stdev_s": 0.0003,
+   "iqr_s": 0.0002,
+   "min_s": 0.0035,
+   "max_s": 0.0045,
+   "all_s": [
+    0.0039,
+    0.004,
+    0.0037,
+    0.004,
+    0.0045,
+    0.0039,
+    0.0035
+   ],
+   "first_run_s": 0.0057,
+   "warmup_runs": 1,
+   "result_digest": "d8a5d29a45904ca7"
+  },
+  "agrégation longue : TMAX annuel par zone, 1991-2024": {
+   "runs": 7,
+   "median_s": 1.6889,
+   "mean_s": 1.6954,
+   "stdev_s": 0.0198,
+   "iqr_s": 0.0168,
+   "min_s": 1.6742,
+   "max_s": 1.7344,
+   "all_s": [
+    1.6983,
+    1.6889,
+    1.7036,
+    1.6742,
+    1.7344,
+    1.6864,
+    1.6819
+   ],
+   "first_run_s": 1.7098,
+   "warmup_runs": 1,
+   "result_digest": "ddf19c84bbbe951b"
+  },
+  "multi-stations : F2, Allemagne, TMAX >= 30 °C, 10 ans": {
+   "runs": 7,
+   "median_s": 0.5932,
+   "mean_s": 0.5949,
+   "stdev_s": 0.0042,
+   "iqr_s": 0.0037,
+   "min_s": 0.5913,
+   "max_s": 0.6031,
+   "all_s": [
+    0.5979,
+    0.6031,
+    0.5913,
+    0.5917,
+    0.5932,
+    0.5941,
+    0.5929
+   ],
+   "first_run_s": 0.5952,
+   "warmup_runs": 1,
+   "result_digest": "31031a08eca18712"
+  },
+  "multi-stations : F2, Espagne, TMAX >= 35 °C, 10 ans": {
+   "runs": 7,
+   "median_s": 0.1323,
+   "mean_s": 0.1327,
+   "stdev_s": 0.0018,
+   "iqr_s": 0.002,
+   "min_s": 0.1308,
+   "max_s": 0.136,
+   "all_s": [
+    0.1331,
+    0.1308,
+    0.1338,
+    0.136,
+    0.1321,
+    0.1309,
+    0.1323
+   ],
+   "first_run_s": 0.135,
+   "warmup_runs": 1,
+   "result_digest": "050dc63c213d2f0e"
+  },
+  "anomalies : F3, deux pays, TMAX": {
+   "runs": 7,
+   "median_s": 0.4298,
+   "mean_s": 0.43,
+   "stdev_s": 0.004,
+   "iqr_s": 0.0025,
+   "min_s": 0.4231,
+   "max_s": 0.4363,
+   "all_s": [
+    0.4363,
+    0.4298,
+    0.4307,
+    0.4322,
+    0.4231,
+    0.4288,
+    0.4291
+   ],
+   "first_run_s": 0.4188,
+   "warmup_runs": 1,
+   "result_digest": "4ec07174362ff44c"
+  },
+  "multi-stations : F4, Espagne, PRCP, 10 ans": {
+   "runs": 3,
+   "median_s": 2.4165,
+   "mean_s": 2.4179,
+   "stdev_s": 0.0079,
+   "iqr_s": 0.0078,
+   "min_s": 2.4107,
+   "max_s": 2.4264,
+   "all_s": [
+    2.4264,
+    2.4107,
+    2.4165
+   ],
+   "first_run_s": 2.4697,
+   "warmup_runs": 1,
+   "result_digest": "a80ccd139210c5d3"
+  }
+ },
+ "observations": 21460068
+}

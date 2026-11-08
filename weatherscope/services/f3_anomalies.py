@@ -7,6 +7,9 @@
 - anomalie de zone : moyenne par maille de 0,5° des anomalies des stations, puis moyenne des mailles,
   pour ne pas surpondérer les régions denses ; au moins 5 mailles.
 Classement par |anomalie| décroissante, puis zone, année, mois.
+
+Distribué : tout ce qui concerne une station (mois éligibles, normale, écart) se calcule par station,
+donc sur chaque worker ; le coordinateur ne reçoit que les anomalies par maille (D27).
 """
 
 from weatherscope.services.common import REFERENCE, UNITS, fetch, round2
@@ -22,15 +25,18 @@ WITH ms AS (
     WHERE s.zone = ANY(%(zones)s) AND m.element = %(element)s AND m.n_valid > 0
       AND m.n_valid * 10 >= 8 * extract(day FROM make_date(m.year, m.month, 1) + interval '1 month - 1 day')
       AND (m.year BETWEEN {REFERENCE[0]} AND {REFERENCE[1]} OR m.year BETWEEN %(y0)s AND %(y1)s)
-), normal AS (
-    SELECT station, month, avg(mean) AS normal
-    FROM ms WHERE year BETWEEN {REFERENCE[0]} AND {REFERENCE[1]}
-    GROUP BY station, month HAVING count(*) >= {MIN_REF_YEARS}
+), station_months AS (
+    -- Normale de la station pour ce mois calendaire, à côté de chaque mois. Fenêtre découpée par station
+    -- (colonne de distribution) : en distribué, calculée sur chaque worker, sans jointure sur le coordinateur.
+    SELECT zone, cell_lat, cell_lon, year, month, mean,
+           avg(mean) FILTER (WHERE year BETWEEN {REFERENCE[0]} AND {REFERENCE[1]}) OVER w AS normal,
+           count(*) FILTER (WHERE year BETWEEN {REFERENCE[0]} AND {REFERENCE[1]}) OVER w AS ref_years
+    FROM ms
+    WINDOW w AS (PARTITION BY station, month)
 ), cells AS (
-    SELECT ms.zone, ms.year, ms.month, ms.cell_lat, ms.cell_lon,
-           avg(ms.mean - n.normal) AS anomaly, count(*) AS stations
-    FROM ms JOIN normal n ON n.station = ms.station AND n.month = ms.month
-    WHERE ms.year BETWEEN %(y0)s AND %(y1)s
+    SELECT zone, year, month, cell_lat, cell_lon, avg(mean - normal) AS anomaly, count(*) AS stations
+    FROM station_months
+    WHERE ref_years >= {MIN_REF_YEARS} AND year BETWEEN %(y0)s AND %(y1)s
     GROUP BY 1, 2, 3, 4, 5
 )
 SELECT zone, year, month, avg(anomaly) AS anomaly, count(*) AS cells, sum(stations) AS stations

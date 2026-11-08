@@ -1,0 +1,132 @@
+{
+ "config": "local",
+ "environment": {
+  "date": "2026-11-08 22:53:54",
+  "os": "Linux-6.8.0-147-generic-x86_64-with-glibc2.39",
+  "python": "3.14.2",
+  "cpu_threads": 16,
+  "docker": "29.9.3",
+  "docker_cpus": 16,
+  "docker_mem_gb": 13.5,
+  "server": {
+   "postgres": "PostgreSQL 17.2 (Debian 17.2-1.pgdg120+1)",
+   "shared_buffers": "2GB",
+   "work_mem": "4MB",
+   "parallel_workers": "2"
+  }
+ },
+ "protocol": {
+  "queries_per_series": 20,
+  "repetitions": 3,
+  "warmup_series": 1,
+  "seed": 20261108,
+  "shares_percent": [
+   0,
+   5,
+   25,
+   50,
+   100
+  ],
+  "client": "un seul client, requêtes séquentielles"
+ },
+ "series": {
+  "0": {
+   "total": {
+    "runs": 3,
+    "median_s": 0.0387,
+    "mean_s": 0.0487,
+    "stdev_s": 0.0177,
+    "iqr_s": 0.0154,
+    "min_s": 0.0383,
+    "max_s": 0.069,
+    "all_s": [
+     0.069,
+     0.0387,
+     0.0383
+    ]
+   },
+   "queries_regional": 0,
+   "queries_routine": 20,
+   "routine_median_s": 0.00218
+  },
+  "5": {
+   "total": {
+    "runs": 3,
+    "median_s": 0.6252,
+    "mean_s": 0.7562,
+    "stdev_s": 0.2303,
+    "iqr_s": 0.2004,
+    "min_s": 0.6213,
+    "max_s": 1.022,
+    "all_s": [
+     1.022,
+     0.6213,
+     0.6252
+    ]
+   },
+   "queries_regional": 1,
+   "queries_routine": 19,
+   "routine_median_s": 0.00216,
+   "regional_median_s": 0.5874
+  },
+  "25": {
+   "total": {
+    "runs": 3,
+    "median_s": 1.8296,
+    "mean_s": 1.859,
+    "stdev_s": 0.5403,
+    "iqr_s": 0.5397,
+    "min_s": 1.334,
+    "max_s": 2.4135,
+    "all_s": [
+     1.8296,
+     2.4135,
+     1.334
+    ]
+   },
+   "queries_regional": 5,
+   "queries_routine": 15,
+   "routine_median_s": 0.00244,
+   "regional_median_s": 0.3519
+  },
+  "50": {
+   "total": {
+    "runs": 3,
+    "median_s": 2.6441,
+    "mean_s": 2.6426,
+    "stdev_s": 0.0032,
+    "iqr_s": 0.0029,
+    "min_s": 2.6389,
+    "max_s": 2.6447,
+    "all_s": [
+     2.6441,
+     2.6389,
+     2.6447
+    ]
+   },
+   "queries_regional": 10,
+   "queries_routine": 10,
+   "routine_median_s": 0.00283,
+   "regional_median_s": 0.3488
+  },
+  "100": {
+   "total": {
+    "runs": 3,
+    "median_s": 4.7383,
+    "mean_s": 4.7438,
+    "stdev_s": 0.0114,
+    "iqr_s": 0.0104,
+    "min_s": 4.7362,
+    "max_s": 4.757,
+    "all_s": [
+     4.757,
+     4.7383,
+     4.7362
+    ]
+   },
+   "queries_regional": 20,
+   "queries_routine": 0,
+   "regional_median_s": 0.2404
+  }
+ }
+}

@@ -25,31 +25,35 @@ from weatherscope.services.common import (
     unit_value,
 )
 
-# Seuils par station et mois calendaire. Regroupés par station (colonne de distribution) :
-# en distribué, calculés entièrement sur chaque worker.
-THRESHOLDS = f"""
-st AS (SELECT s.id, s.cell_lat, s.cell_lon FROM stations s WHERE {{area}}),
-thr AS (
-    SELECT o.station, extract(month FROM o.date)::int AS month,
-           percentile_disc(%(quantile)s) WITHIN GROUP (ORDER BY o.value) AS p
-    FROM observations o JOIN st ON st.id = o.station
-    WHERE o.element = %(element)s AND {VALID}
-      AND o.date BETWEEN '{REFERENCE[0]}-01-01' AND '{REFERENCE[1]}-12-31'
-    GROUP BY 1, 2
-    -- au moins 80 pour cent des jours de ce mois calendaire sur les 30 ans (février compté à 28 jours)
-    HAVING count(*) * 10 >= 8 * 30 * extract(day FROM make_date(2001, extract(month FROM o.date)::int, 1)
-                                             + interval '1 month - 1 day')
-),
-obs AS (
-    SELECT o.station, o.date, o.value, t.p, st.cell_lat, st.cell_lon
+# 1. Seuils par station et mois calendaire, calculés une seule fois par requête F4 (le plus coûteux :
+#    30 ans de mesures). Regroupés par station (colonne de distribution) : en distribué, chaque worker
+#    calcule seul les seuils de ses stations ; le coordinateur ne reçoit qu'une ligne par station et par mois.
+SQL_THRESHOLDS = f"""
+SELECT o.station, extract(month FROM o.date)::int AS month,
+       percentile_disc(%(quantile)s) WITHIN GROUP (ORDER BY o.value) AS p
+FROM observations o JOIN stations s ON s.id = o.station
+WHERE {{area}} AND o.element = %(element)s AND {VALID}
+  AND o.date BETWEEN '{REFERENCE[0]}-01-01' AND '{REFERENCE[1]}-12-31'
+GROUP BY 1, 2
+-- au moins 80 pour cent des jours de ce mois calendaire sur les 30 ans (février compté à 28 jours)
+HAVING count(*) * 10 >= 8 * 30 * extract(day FROM make_date(2001, extract(month FROM o.date)::int, 1)
+                                         + interval '1 month - 1 day')
+ORDER BY 1, 2
+"""
+
+# 2. Observations de la période avec le seuil de leur station : les seuils sont passés en paramètres
+#    (tableaux), que Citus envoie à chaque worker ; la jointure se fait donc sur les workers.
+OBS = f"""obs AS (
+    SELECT o.station, o.date, o.value, t.p, s.cell_lat, s.cell_lon
     FROM observations o
-    JOIN st ON st.id = o.station
-    JOIN thr t ON t.station = o.station AND t.month = extract(month FROM o.date)
+    JOIN stations s ON s.id = o.station
+    JOIN unnest(%(thr_station)s::text[], %(thr_month)s::int[], %(thr_p)s::int[]) AS t(station, month, p)
+      ON t.station = o.station AND t.month = extract(month FROM o.date)
     WHERE o.element = %(element)s AND o.date BETWEEN %(start)s AND %(end)s AND {VALID}
 )"""
 
 SQL_DAILY = f"""
-WITH {THRESHOLDS},
+WITH {OBS},
 cell_day AS (
     SELECT date, cell_lat, cell_lon,
            bool_or(value > p) AS hit,
@@ -66,7 +70,7 @@ ORDER BY date
 """
 
 SQL_EVIDENCE = f"""
-WITH {THRESHOLDS}
+WITH {OBS}
 SELECT station, date, value, p AS threshold, cell_lat, cell_lon
 FROM obs WHERE value > p AND date = ANY(%(dates)s)
 ORDER BY date, station
@@ -78,11 +82,19 @@ def params_for(area: Area, element: str, start: date, end: date, quantile: float
     return where, {**params, "element": element, "start": start, "end": end, "quantile": quantile}
 
 
+def with_thresholds(conn, area: Area, element: str, start: date, end: date, quantile: float) -> dict:
+    """Paramètres de SQL_DAILY et SQL_EVIDENCE : calcule les seuils (SQL_THRESHOLDS) et les ajoute en tableaux."""
+    where, params = params_for(area, element, start, end, quantile)
+    thr = fetch(conn, SQL_THRESHOLDS.format(area=where), params)
+    return {**params, "thr_station": [t["station"] for t in thr], "thr_month": [t["month"] for t in thr],
+            "thr_p": [t["p"] for t in thr]}
+
+
 def events(conn, area: Area, element: str, start: date, end: date, quantile: float = 0.95,
            min_cells: int = 3, min_share: float = 0.25, evidence: bool = True) -> dict:
-    where, params = params_for(area, element, start, end, quantile)
+    params = with_thresholds(conn, area, element, start, end, quantile)
     share_min = Fraction(str(min_share))
-    days = fetch(conn, SQL_DAILY.format(area=where), params)
+    days = fetch(conn, SQL_DAILY, params)
 
     regional = [d for d in days if d["cells_hit"] >= min_cells
                 and Fraction(d["cells_hit"], d["cells_reporting"]) >= share_min]
@@ -113,7 +125,7 @@ def events(conn, area: Area, element: str, start: date, end: date, quantile: flo
 
     if evidence:
         wanted = [x for e in found + isolated_top for x in e["dates"]]
-        ev = fetch(conn, SQL_EVIDENCE.format(area=where), {**params, "dates": wanted}) if wanted else []
+        ev = fetch(conn, SQL_EVIDENCE, {**params, "dates": wanted}) if wanted else []
         by_date: dict[date, list] = {}
         for r in ev:
             by_date.setdefault(r["date"], []).append({

@@ -158,7 +158,10 @@ def events(start: Day, end: Day, zone: Zone = None, bbox: Bbox = None,
     a, s, e = area(zone, bbox), date.fromisoformat(start), date.fromisoformat(end)
     if show_explain:
         where, params = f4_regional.params_for(a, element, s, e, quantile)
-        show_plan(f4_regional.SQL_DAILY.format(area=where), params)
+        show_plan(f4_regional.SQL_THRESHOLDS.format(area=where), params)
+        with connect() as conn:
+            params = f4_regional.with_thresholds(conn, a, element, s, e, quantile)
+        show_plan(f4_regional.SQL_DAILY, params)
 
     def show(r):
         table(f"{r['count']} événements régionaux ({element} > quantile {quantile} de la station)",
