@@ -1,6 +1,6 @@
-# Passation : mesures de la Partie II (état au 8 novembre 2026, 20 h 30)
+# Passation : mesures de la Partie II (état au 8 novembre 2026, 21 h)
 
-Ce qui a été fait sur le poste de Mamadou, ce qui reste, et comment le reprendre. Les scripts sont dans `bench/`,
+Ce qui a été fait sur le poste de Mamadou, ce qui reste, et qui le fait. Les scripts sont dans `bench/`,
 le déploiement dans `deploy/citus/`, les résultats bruts dans `bench/results/`.
 
 ## Fait (et commité sur la branche `deploy`)
@@ -33,23 +33,31 @@ le déploiement dans `deploy/citus/`, les résultats bruts dans `bench/results/`
 
 ## Reste à faire (rien de cela n'a de résultat)
 
-1. **E3** local et Citus-2 : commencé sur Citus-2 (parts 0, 2 et 10 % faites, non commitées), arrêté. À refaire en entier.
-2. **E1** : tailles 25 % et 50 % (bases dédiées, ingestion mesurée), 100 % réutilise le chargement initial (`--full-ingest-seconds`).
-3. **Passage à 3 workers** puis **E2 sur Citus-3**.
-4. **E4 (bonus)** : déséquilibre entre workers (le script n'existe pas ; les lignes par worker, les shards et les stations les plus lourdes sont à mesurer).
-5. **Rapport, Partie II** : marqueurs rouges `\afaire` de `docs/rapport/rapport.tex` (lignes 240 à 298), puis `bench.report` pour les tableaux.
-6. **Vérification indépendante de F4**, slides, démo, défi en direct, relecture croisée.
+1. **Mesures (Mamadou, sur son PC, en cours le 8 novembre au soir)** : `bash bench/run_all.sh 4602` (≈ 2 h) enchaîne E3 Citus-2, E3 local,
+   E1, le passage à 3 workers et E2 Citus-3, puis écrit `bench/results/tableaux.md`. Les résultats arriveront par une PR `results` vers `main`.
+   Les données sont déjà chargées sur ce PC : **personne ne recharge rien**, et tous les temps viennent du même poste (comparables entre eux).
+2. **Stevenson** :
+   - **Rapport, Partie II** : marqueurs rouges `faire` de `docs/rapport/rapport.tex` (section « Partie II » et « Expériences »).
+     Peut commencer tout de suite avec ce qui est déjà mesuré : déploiement, placement, panne, E2 local/Citus-2 et la cause de F3 (ci-dessus) ;
+     E1, E3 et Citus-3 viendront de `tableaux.md`.
+   - **Vérification indépendante de F4** (script dans `verify/` qui relit les fichiers NOAA, comme F2 et F3).
+   - **E4 (bonus)** : déséquilibre entre workers (w2 porte 22 % de plus que w1 en Citus-2) ; pas de script.
+   - Slides, démo de 5 min, préparation du défi en direct, relecture croisée.
+3. **Hugo** : corriger D19 dans `docs/decisions.md` (Mamadou travaille sur la Partie II), ajouter les décisions du déploiement Citus, assembler le rapport.
 
-## Comment reprendre sur un autre poste
+## Écarts au protocole à écrire dans le rapport
 
-- **Prérequis** : Docker avec ≥ 8 Go de RAM, ≥ 30 Go de disque libre, `uv`. **Utiliser `127.0.0.1` et non `localhost`** (sinon ~200 s par connexion sous Windows).
-- **Chargements** (les données de `data/db/` ne sont pas dans Git) : `uv run python ingest/download.py`, puis `ingest.load` sur le local (≈ 77 min seul)
-  et sur Citus (`deploy/citus/init.sh` puis `DATABASE_URL=...5441 ... ingest.load`, ≈ 30 min). **Ne pas charger les deux en même temps** : le disque sature.
-- **Les temps ne se comparent pas d'un poste à l'autre** : refaire aussi `bench.e2 --config local` et `--config citus2` sur le nouveau poste
-  pour avoir un jeu cohérent (≈ 40 min), et noter le matériel (`environment` est enregistré dans chaque JSON). Les fichiers `e2_*` de ce dossier sont ceux de Mamadou.
-- **Ordre à respecter** : tout ce qui est `citus2` (E2, E3, panne) **avant** `deploy/citus/add_worker.sh`, qui rend le passage à 3 workers définitif.
-- **Lancer la suite** : `bash bench/run_all.sh <secondes d'ingestion locale>` (≈ 4 h). Paramètres d'E3 réduits à 50 requêtes par série, 3 répétitions et des parts
-  de 0, 2, 10, 50 et 100 % (la prédiction écrite prévoyait 200 requêtes, 5 répétitions, 0/1/5/25/50/100 % : irréalisable, car 50 F3 à 63 s prennent ~53 min par répétition) ;
-  cet écart doit figurer dans le rapport.
-- **Rapport** : donner les chiffres d'ingestion de ce poste (77 min, Docker 7,6 Go de RAM, disque à 95 %) et pas les 19 min de Hugo ; mentionner que plusieurs instances sur un
-  seul poste se partagent CPU, mémoire et disque, et que ce n'est pas un cluster de machines.
+- **E3** : 20 requêtes par série, 3 répétitions, parts de 0, 5, 25, 50 et 100 % de régionales, au lieu de 200 requêtes, 5 répétitions et 0/1/5/25/50/100 %
+  prévus par `docs/e3_prediction.md`. Raison : F3 prend ~63 s sur Citus, une série à 100 % aurait duré près de 2 h par répétition.
+  La part de 1 % n'est donc pas mesurée (5 % est le plus petit point).
+- **E1** : tailles 10 %, 25 % et 100 % des stations (la plus grande = 21,46 M observations ≥ 10 M) ; 100 % = chargement initial mesuré seul (4 602 s).
+- **E2 Citus-3** : 5 répétitions (7 pour local et Citus-2).
+- **Poste** : ingestion 77 min (Docker 7,6 Go de RAM, disque à 95 %), pas les 19 min de Hugo ; plusieurs instances sur un seul poste se partagent
+  CPU, mémoire et disque, ce n'est pas un cluster de machines.
+
+## Pour relancer sur un autre poste (si besoin)
+
+- Docker avec ≥ 8 Go de RAM, ≥ 30 Go de disque libre, `uv`. **Utiliser `127.0.0.1` et non `localhost`** (sinon ~200 s par connexion sous Windows).
+- Chargements (non versionnés) : `ingest/download.py`, puis `ingest.load` sur le local (≈ 77 min) et sur Citus (`deploy/citus/init.sh`, ≈ 30 min), jamais en même temps.
+- Refaire alors aussi E2 local et Citus-2 : les temps ne se comparent pas d'un poste à l'autre.
+- Tout ce qui est `citus2` doit passer **avant** `deploy/citus/add_worker.sh` (passage à 3 workers définitif).

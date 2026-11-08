@@ -1,9 +1,10 @@
 """E1 : volume de données croissant, sur le serveur PostgreSQL local.
 
-Usage : uv run python -m bench.e1 [--sizes 25 50 100] [--runs 5] [--keep] [--full-ingest-seconds S]
+Usage : uv run python -m bench.e1 [--sizes 10 25 100] [--runs 5] [--keep] [--full-ingest-seconds S]
 Trois sous-ensembles de l'archive réelle, chacun chargé dans sa propre base par le même chemin d'import
 (ingest.load.import_files, 1991-2024 : la référence F3 est comprise) :
-  25 %  : une station sur quatre (par ordre d'identifiant)
+  10 %  : une station sur dix (par ordre d'identifiant)
+  25 %  : une station sur quatre
   50 %  : une station sur deux
   100 % : les 774 stations (au moins 10 millions d'observations brutes)
 Pour chaque taille : observations, temps d'ingestion, espace disque (tables, index, base), temps des requêtes
@@ -69,7 +70,7 @@ def run_size(pct: int, runs: int, keep: bool, full_ingest_s: float | None = None
     """pct = 100 avec full_ingest_s : réutilise la base principale (chargement initial déjà fait, durée mesurée seul)."""
     reuse = pct == 100 and full_ingest_s is not None
     name = "weatherscope" if reuse else f"weatherscope_e1_{pct}"
-    step = {25: 4, 50: 2, 100: 1}[pct]
+    step = {10: 10, 25: 4, 50: 2, 100: 1}[pct]
     files = sorted((ROOT / "data" / "raw" / "by_station").glob("*.csv.gz"))[::step]
     print(f"== {pct} % : {len(files)} stations, base {name}" + (" (chargement initial réutilisé)" if reuse else ""))
     url = common.URLS["local"] if reuse else database_url(name)
@@ -114,7 +115,7 @@ def run_size(pct: int, runs: int, keep: bool, full_ingest_s: float | None = None
 
 def main() -> None:
     p = argparse.ArgumentParser()
-    p.add_argument("--sizes", type=int, nargs="+", default=[25, 50, 100], choices=[25, 50, 100])
+    p.add_argument("--sizes", type=int, nargs="+", default=[10, 25, 100], choices=[10, 25, 50, 100])
     p.add_argument("--runs", type=int, default=5)
     p.add_argument("--keep", action="store_true", help="ne pas supprimer les bases de test")
     p.add_argument("--full-ingest-seconds", type=float,
