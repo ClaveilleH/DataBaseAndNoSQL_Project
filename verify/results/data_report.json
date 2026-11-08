@@ -1,0 +1,233 @@
+{
+ "stations": {
+  "GM": 589,
+  "SP": 185
+ },
+ "cells": {
+  "GM": 213,
+  "SP": 94
+ },
+ "station_days": {
+  "GM reference": 4240777,
+  "GM study": 2029108,
+  "SP reference": 1020762,
+  "SP study": 621891
+ },
+ "observations": {
+  "GM reference PRCP flagged": 43,
+  "GM reference PRCP valid": 4208967,
+  "GM reference TMAX flagged": 97,
+  "GM reference TMAX valid": 3572600,
+  "GM reference TMIN flagged": 119,
+  "GM reference TMIN valid": 3571251,
+  "GM study PRCP flagged": 6,
+  "GM study PRCP valid": 2010884,
+  "GM study TMAX flagged": 7,
+  "GM study TMAX valid": 1662847,
+  "GM study TMIN flagged": 18,
+  "GM study TMIN valid": 1662826,
+  "SP reference PRCP flagged": 9,
+  "SP reference PRCP valid": 965962,
+  "SP reference TMAX flagged": 333,
+  "SP reference TMAX valid": 1002404,
+  "SP reference TMIN flagged": 268,
+  "SP reference TMIN valid": 994030,
+  "SP study PRCP flagged": 5,
+  "SP study PRCP valid": 604505,
+  "SP study TMAX flagged": 289,
+  "SP study TMAX valid": 598648,
+  "SP study TMIN flagged": 209,
+  "SP study TMIN valid": 603741
+ },
+ "active_stations": {
+  "GM reference PRCP": 585,
+  "GM reference TMAX": 541,
+  "GM reference TMIN": 541,
+  "GM study PRCP": 579,
+  "GM study TMAX": 474,
+  "GM study TMIN": 474,
+  "SP reference PRCP": 175,
+  "SP reference TMAX": 175,
+  "SP reference TMIN": 175,
+  "SP study PRCP": 184,
+  "SP study TMAX": 183,
+  "SP study TMIN": 183
+ },
+ "per_year": {
+  "GM 1991": 405887,
+  "GM 1992": 415668,
+  "GM 1993": 418215,
+  "GM 1994": 427005,
+  "GM 1995": 434795,
+  "GM 1996": 437498,
+  "GM 1997": 437594,
+  "GM 1998": 450801,
+  "GM 1999": 459989,
+  "GM 2000": 452603,
+  "GM 2001": 452112,
+  "GM 2002": 445693,
+  "GM 2003": 441591,
+  "GM 2004": 437454,
+  "GM 2005": 474226,
+  "GM 2006": 491871,
+  "GM 2007": 505283,
+  "GM 2008": 526836,
+  "GM 2009": 532675,
+  "GM 2010": 536985,
+  "GM 2011": 539714,
+  "GM 2012": 542045,
+  "GM 2013": 541697,
+  "GM 2014": 544840,
+  "GM 2015": 542570,
+  "GM 2016": 544730,
+  "GM 2017": 542515,
+  "GM 2018": 539373,
+  "GM 2019": 533573,
+  "GM 2020": 532292,
+  "GM 2021": 529522,
+  "GM 2022": 526892,
+  "GM 2023": 522821,
+  "GM 2024": 522300,
+  "SP 1991": 98636,
+  "SP 1992": 99708,
+  "SP 1993": 100049,
+  "SP 1994": 99854,
+  "SP 1995": 100636,
+  "SP 1996": 101120,
+  "SP 1997": 99682,
+  "SP 1998": 98970,
+  "SP 1999": 98284,
+  "SP 2000": 96343,
+  "SP 2001": 99010,
+  "SP 2002": 98593,
+  "SP 2003": 99344,
+  "SP 2004": 100319,
+  "SP 2005": 100083,
+  "SP 2006": 99656,
+  "SP 2007": 99812,
+  "SP 2008": 175498,
+  "SP 2009": 179382,
+  "SP 2010": 180170,
+  "SP 2011": 182218,
+  "SP 2012": 184970,
+  "SP 2013": 184745,
+  "SP 2014": 185924,
+  "SP 2015": 187564,
+  "SP 2016": 190421,
+  "SP 2017": 188367,
+  "SP 2018": 188462,
+  "SP 2019": 153580,
+  "SP 2020": 190115,
+  "SP 2021": 189707,
+  "SP 2022": 188462,
+  "SP 2023": 187782,
+  "SP 2024": 142937
+ },
+ "qflags": {
+  "I": 682,
+  "O": 320,
+  "N": 192,
+  "S": 172,
+  "K": 26,
+  "G": 8,
+  "M": 3
+ },
+ "anomalies": {
+  "qflag I": {
+   "count": 682,
+   "examples": [
+    "GM000003218 1996-12-31 TMIN=-138",
+    "GM000003218 1997-01-01 TMAX=-151",
+    "GM000004155 2001-11-23 TMAX=-164"
+   ]
+  },
+  "qflag O": {
+   "count": 320,
+   "examples": [
+    "GME00121150 2017-06-29 PRCP=1969",
+    "GME00121282 2010-07-14 TMAX=302",
+    "GME00121366 2002-08-12 PRCP=1940"
+   ]
+  },
+  "PRCP trace (T)": {
+   "count": 267,
+   "examples": [
+    "SPW00013025 1991-01-08 PRCP=0 T",
+    "SPW00013025 1991-01-16 PRCP=0 T",
+    "SPW00013025 1991-03-13 PRCP=0 T"
+   ]
+  },
+  "qflag N": {
+   "count": 192,
+   "examples": [
+    "GME00123382 2006-04-17 TMAX=0",
+    "GME00123382 2006-04-18 TMAX=0",
+    "GME00123382 2006-04-17 TMIN=0"
+   ]
+  },
+  "qflag S": {
+   "count": 172,
+   "examples": [
+    "GM000004155 1993-11-27 TMAX=1",
+    "GM000004155 2013-12-03 TMIN=-15",
+    "GME00102348 1993-02-04 TMIN=51"
+   ]
+  },
+  "station qui s'arrête pendant 2015-2024": {
+   "count": 131,
+   "examples": [
+    "GM000002716 dernière observation 2022-04-14",
+    "GM000003218 dernière observation 2015-03-22",
+    "GME00102236 dernière observation 2019-04-07"
+   ]
+  },
+  "trou de plus de 30 jours (2015-2024)": {
+   "count": 94,
+   "examples": [
+    "GME00102169 du 2015-01-13 au 2015-03-19",
+    "GME00102169 du 2015-09-30 au 2015-11-01",
+    "GME00102169 du 2016-02-27 au 2016-04-08"
+   ]
+  },
+  "station qui commence pendant 2015-2024": {
+   "count": 32,
+   "examples": [
+    "GM000002716 première observation 2022-04-14",
+    "GME00121486 première observation 2021-06-02",
+    "GME00122446 première observation 2015-04-01"
+   ]
+  },
+  "qflag K": {
+   "count": 26,
+   "examples": [
+    "GME00132550 1998-08-27 PRCP=1",
+    "GME00132550 1998-08-28 PRCP=1",
+    "GME00132550 1998-08-29 PRCP=1"
+   ]
+  },
+  "valeur extrême sans qflag (T < -40 °C, T > 48 °C, pluie > 200 mm)": {
+   "count": 15,
+   "examples": [
+    "SP000007038 2019-09-13 PRCP=2037",
+    "SPE00101043 1997-09-30 PRCP=2702",
+    "SPE00120152 1996-11-11 PRCP=2019"
+   ]
+  },
+  "qflag G": {
+   "count": 8,
+   "examples": [
+    "GME00121282 2000-02-02 TMAX=210",
+    "GME00129886 1998-07-11 TMIN=-125",
+    "SPE00156090 2019-05-01 TMAX=0"
+   ]
+  },
+  "qflag M": {
+   "count": 3,
+   "examples": [
+    "GME00121282 2000-02-03 TMIN=168",
+    "GME00121282 2000-02-06 TMIN=151",
+    "GME00121282 2000-02-07 TMIN=119"
+   ]
+  }
+ }
+}
