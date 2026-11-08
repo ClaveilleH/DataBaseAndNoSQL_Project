@@ -97,7 +97,35 @@ Le schéma est réparti par `sql/distribute.sql`, à exécuter après `sql/schem
 - les tables de mesures sont réparties par hachage de la station en 32 shards ;
 - `stations` et `batches` sont des tables de référence, copiées sur chaque worker.
 
-Le déploiement Docker (`deploy/citus/`), la comparaison local/distribué, la perte d'une instance et les expériences E1–E4 (`bench/`) sont décrits dans leurs dossiers.
+### Déploiement Citus
+
+```bash
+docker compose -f deploy/citus/compose.yml up -d     # coordinateur (port 5441) + workers w1, w2
+bash deploy/citus/init.sh                            # enregistre les workers, applique schema.sql et distribute.sql
+export DATABASE_URL=postgresql://weatherscope:weatherscope@localhost:5441/weatherscope
+uv run python -m ingest.load                         # même chargement qu'en local (~20-60 min)
+bash deploy/citus/add_worker.sh                      # (Citus-3) ajoute w3 et rééquilibre les shards
+```
+
+- Chaque instance est un conteneur avec son volume (`data/db/citus/<nœud>`) et son port ; pas de réplication
+  (`citus.shard_replication_factor = 1`) : les observations sont réparties, pas copiées.
+- Budget mémoire : local = 2 Go de `shared_buffers` ; Citus-2 = 2 workers de 1 Go ; Citus-3 = 3 workers de 700 Mo
+  (variable `WORKER_SHARED_BUFFERS`, fixée automatiquement par `bench.common.activate`).
+- Un seul poste : les instances se partagent le processeur, la mémoire et le disque (voir le rapport).
+
+### Tests et expériences
+
+```bash
+uv run pytest tests/test_local_vs_citus.py -v        # local contre Citus : mêmes résultats (les deux bases chargées et démarrées)
+uv run python -m bench.panne                         # perte d'une instance (F1 puis F3), message de l'interface
+uv run python -m bench.e1                            # E1 : volume croissant (25, 50, 100 % des stations), local
+uv run python -m bench.e2 --config local             # E2 : puis citus2, puis citus3 (dans cet ordre)
+uv run python -m bench.e3 --config local             # E3 : puis citus2 (prédiction : docs/e3_prediction.md)
+uv run python -m bench.report                        # tableaux du rapport à partir de bench/results/*.json
+```
+
+Un seul déploiement tourne à la fois : `bench.common.activate` arrête les autres et démarre celui qui est mesuré.
+Les mesures brutes (toutes les durées, versions, paramètres mémoire) sont dans `bench/results/`.
 
 ## Organisation du dépôt
 

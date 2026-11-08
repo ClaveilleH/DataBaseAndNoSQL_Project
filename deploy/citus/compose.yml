@@ -1,0 +1,64 @@
+# Partie II : Citus 13.0 (PostgreSQL 17.2, comme le local), un coordinateur et des workers.
+# Chaque instance a son conteneur, son volume et son port. Tout tourne sur le même poste :
+# les instances se partagent le processeur, la mémoire et le disque (voir le rapport).
+#
+# Citus-2 : docker compose -f deploy/citus/compose.yml up -d         (coordinateur + w1 + w2)
+# Citus-3 : docker compose -f deploy/citus/compose.yml --profile citus3 up -d   (ajoute w3)
+# Initialisation : deploy/citus/init.sh ; passage à 3 workers : deploy/citus/add_worker.sh.
+#
+# Mémoire : le local a shared_buffers = 2 Go. Par défaut, 2 workers de 1 Go donnent le même
+# budget total en Citus-2 ; WORKER_SHARED_BUFFERS permet de le changer (ex. 700MB pour 3 workers).
+# Les ports ne sont publiés que sur 127.0.0.1 et les nœuds se font confiance entre eux
+# (auth « trust » sur le réseau Docker) : acceptable pour un prototype sur un poste.
+name: weatherscope-citus
+
+x-citus-node: &citus-node
+  image: citusdata/citus:13.0
+  environment: &citus-env
+    POSTGRES_USER: weatherscope
+    POSTGRES_PASSWORD: weatherscope
+    POSTGRES_DB: weatherscope
+    POSTGRES_HOST_AUTH_METHOD: trust
+  healthcheck:
+    test: ["CMD-SHELL", "pg_isready -U weatherscope -d weatherscope"]
+    interval: 3s
+    timeout: 3s
+    retries: 30
+
+services:
+  coordinator:
+    <<: *citus-node
+    command: ["postgres", "-c", "shared_buffers=${COORDINATOR_SHARED_BUFFERS:-256MB}",
+              "-c", "citus.shard_replication_factor=1",   # pas de réplication : répartir, pas copier
+              # Le rééquilibrage (Citus-3) refuse de déplacer un shard s'il reste moins de 10 % de
+              # disque libre ; le disque du poste est presque plein (~93 %), pour environ 3 Go de données.
+              "-c", "citus.desired_percent_disk_available_after_move=2"]
+    ports:
+      - "127.0.0.1:5441:5432"
+    volumes:
+      - ../../data/db/citus/coordinator:/var/lib/postgresql/data
+
+  w1:
+    <<: *citus-node
+    command: ["postgres", "-c", "shared_buffers=${WORKER_SHARED_BUFFERS:-1GB}"]
+    ports:
+      - "127.0.0.1:5451:5432"
+    volumes:
+      - ../../data/db/citus/w1:/var/lib/postgresql/data
+
+  w2:
+    <<: *citus-node
+    command: ["postgres", "-c", "shared_buffers=${WORKER_SHARED_BUFFERS:-1GB}"]
+    ports:
+      - "127.0.0.1:5452:5432"
+    volumes:
+      - ../../data/db/citus/w2:/var/lib/postgresql/data
+
+  w3:
+    <<: *citus-node
+    profiles: ["citus3"]
+    command: ["postgres", "-c", "shared_buffers=${WORKER_SHARED_BUFFERS:-1GB}"]
+    ports:
+      - "127.0.0.1:5453:5432"
+    volumes:
+      - ../../data/db/citus/w3:/var/lib/postgresql/data
