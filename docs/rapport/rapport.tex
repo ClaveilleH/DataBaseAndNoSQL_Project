@@ -16,7 +16,7 @@
 \newcommand{\cmd}[1]{\texttt{#1}}
 
 \title{WeatherScope}
-\author{Hugo CLAVEILLE, JULES Stevenson, DIALLO Mamadou Ougailou}
+\author{CLAVEILLE Hugo, JULES Stevenson, DIALLO Mamadou Ougailou}
 \date{8 novembre 2026}
 
 \fancypagestyle{plain}{
@@ -52,7 +52,7 @@
 
 \begin{itemize}
   \item \textbf{Zones :} Allemagne (\cmd{GM}) et Espagne (\cmd{SP}), définies par le préfixe pays de l'identifiant NOAA.
-    Deux climats contrastés (océanique/continental et méditerranéen), différents des zones des autres groupes (États-Unis, Afrique).
+    Deux climats contrastés (océanique/continental et méditerranéen).
   \item \textbf{Années d'étude :} 2015--2024 (10 ans). \textbf{Référence :} 1991--2020 (normale climatologique de 30 ans),
     chargée par le même pipeline et comptée à part.
   \item \textbf{Stations :} les 774 stations (589 GM, 185 SP) dont au moins un des éléments TMAX, TMIN, PRCP
@@ -109,7 +109,7 @@ Le volume est stable de 1991 à 2023 ; en 2024, l'Espagne perd environ 24\,\% de
     rendent un mois inéligible sous 80\,\% de jours valides (F3) et sont pris en compte dans la part de mailles
     qui rapportent (F4).
   \item \textbf{Doublons :} l'identité d'une observation est (station, élément, date) ; c'est la clé primaire,
-    un doublon ne peut donc pas être stocké.
+    un doublon est donc impossible.
   \item \textbf{Unités :} valeurs stockées en entiers bruts NOAA (dixièmes de °C ou de mm), convertis à l'affichage seulement.
 \end{itemize}
 
