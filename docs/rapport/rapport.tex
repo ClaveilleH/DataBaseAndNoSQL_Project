@@ -51,17 +51,17 @@
 % ======================================================================================================================
 \section{Périmètre}
 
-\begin{itemize}
-  \item \textbf{Zones :} Allemagne (\cmd{GM}) et Espagne (\cmd{SP}), définies par le préfixe pays de l'identifiant NOAA.
-    Deux climats contrastés (océanique/continental et méditerranéen).
-  \item \textbf{Années d'étude :} 2015--2024 (10 ans). \textbf{Référence :} 1991--2020 (normale climatologique de 30 ans),
-    chargée par le même pipeline et comptée à part.
-  \item \textbf{Stations :} les 774 stations (589 GM, 185 SP) dont au moins un des éléments TMAX, TMIN, PRCP
-    est actif pendant 2015--2024 d'après \cmd{ghcnd-inventory.txt}. Les stations qui commencent ou s'arrêtent
-    pendant la période sont gardées et signalées (annexe~\ref{ann:anomalies}).
-  \item Les seuils du sujet sont dépassés : 2\,650\,999 couples station-jour sur 2015--2024 (minimum 200\,000)
-    et 21,46 millions d'observations au total (minimum 10 millions pour E1).
-\end{itemize}
+Nous avons retenu deux zones, l'Allemagne (\cmd{GM}) et l'Espagne (\cmd{SP}). Chaque zone est définie par le
+préfixe pays de l'identifiant NOAA. Les deux pays ont des climats contrastés : océanique ou continental pour
+l'un, méditerranéen pour l'autre. La période d'étude couvre 2015--2024, soit 10 ans. La période de référence
+couvre 1991--2020 et correspond à une normale climatologique de 30 ans. Elle est chargée par le même pipeline
+que l'étude et comptée à part.
+
+Nous gardons les 774 stations (589 GM, 185 SP) dont au moins un des éléments TMAX, TMIN ou PRCP est actif
+pendant 2015--2024, d'après \cmd{ghcnd-inventory.txt}. Les stations qui commencent ou s'arrêtent pendant la
+période sont gardées et signalées en annexe~\ref{ann:anomalies}. Ce périmètre dépasse les seuils du sujet.
+Il compte 2\,650\,999 couples station-jour sur 2015--2024, pour un minimum de 200\,000. Il compte aussi
+21,46 millions d'observations sur 1991--2024, pour un minimum de 10 millions exigé par E1.
 
 % ======================================================================================================================
 \section{Données}
@@ -71,14 +71,16 @@ récupérée le 8 novembre 2026, plus les fichiers de métadonnées (\cmd{ghcnd-
 L'URL, la date, la taille et le SHA-256 de chaque fichier sont dans \cmd{data/manifest/}. En base, chaque import
 crée un lot (table \cmd{batches}) et chaque observation garde l'identifiant du lot qui l'a écrite.
 
-\paragraph{Volume.} Calculé directement sur les fichiers NOAA (\cmd{verify/data\_report.py}).
-Valide = sans \cmd{qflag} et sans \cmd{mflag} P.
+\paragraph{Volume.} Les volumes sont calculés directement sur les fichiers NOAA par \cmd{verify/data\_report.py}.
+Une observation est valide si elle n'a pas de \cmd{qflag} et pas de \cmd{mflag} P.
 
 \begin{table}[H]
 \centering\small
 \begin{tabular}{llrrrr}
 \toprule
-Zone & Élément & Stations 2015--24 & Valides 2015--24 & Valides 1991--2014 (réf.) & Invalides \\
+ & & \multicolumn{1}{c}{Stations} & \multicolumn{2}{c}{Observations valides} & \multicolumn{1}{c}{Invalides} \\
+\cmidrule(lr){4-5}
+Zone & Élément & 2015--2024 & 2015--2024 & 1991--2014 & 1991--2024 \\
 \midrule
 GM & TMAX & 474 & 1\,662\,847 & 3\,572\,600 & 104 \\
 GM & TMIN & 474 & 1\,662\,826 & 3\,571\,251 & 137 \\
@@ -89,30 +91,38 @@ SP & PRCP & 184 & 604\,505 & 965\,962 & 14 \\
 \bottomrule
 \end{tabular}
 \end{table}
+La référence 1991--2020 utilise les deux colonnes d'observations valides : les années 1991--2014 ne servent qu'à
+elle, les années 2015--2020 servent à la fois à l'étude et à la référence.
 
-\paragraph{Couverture.} Couples station-jour 2015--2024 : 2\,029\,108 (GM), 621\,891 (SP).
-Répartition géographique : 213 mailles de 0,5° occupées en Allemagne, 94 en Espagne ; la densité est
-plus forte en Allemagne et inégale à l'intérieur de chaque pays (côtes et grandes villes en Espagne).
-Le volume est stable de 1991 à 2023 ; en 2024, l'Espagne perd environ 24\,\% de ses observations
-(142\,937 contre 187\,782 en 2023), car des stations s'arrêtent ou ne sont pas encore publiées.
+\paragraph{Couverture.} Sur 2015--2024, nous comptons 2\,029\,108 couples station-jour en Allemagne et 621\,891
+en Espagne. Les stations occupent 213 mailles de 0,5° en Allemagne et 94 en Espagne. La densité est plus forte en
+Allemagne. Elle est aussi inégale à l'intérieur de chaque pays, en particulier en Espagne, où les stations se
+concentrent sur les côtes et dans les grandes villes.
+Le volume n'est pas constant. En Allemagne, il passe d'environ 406\,000 observations en 1991 à 520\,000--540\,000
+par an après 2010. En Espagne, il saute de 100\,000 à 175\,000 en 2008, quand de nouvelles stations apparaissent, puis
+baisse en 2019 (153\,580) et en 2024 (142\,937 contre 187\,782 en 2023), car des stations s'arrêtent ou ne sont pas
+encore publiées. Les stations espagnoles ouvertes en 2008 n'ont que 13 années dans la référence 1991--2020 : elles
+n'ont pas de normale et ne participent ni à F3 ni à F4.
 
-\paragraph{Traitement des données.}
-\begin{itemize}
-  \item \textbf{\cmd{qflag} non vide :} observation stockée et comptée, mais exclue de tous les calculs (1\,403 lignes).
-  \item \textbf{Pluie T (trace) :} valide, comptée 0~mm et à part (267 lignes, toutes en Espagne). Une trace est une
-    vraie observation d'une pluie négligeable.
-  \item \textbf{Pluie P (manquante, présumée nulle) :} traitée comme manquante, jamais comme un zéro mesuré
-    (aucune dans notre extrait, règle tout de même implémentée).
-  \item \textbf{Pluie B, D :} cumuls de 2 ou 4 relevés partiels, ce sont de vraies mesures, gardées telles quelles.
-  \item \textbf{Valeurs inhabituelles sans \cmd{qflag} :} gardées (ex. 203,7~mm le 13/09/2019 à SP000007038,
-    épisode méditerranéen réel) ; seule la NOAA invalide une valeur.
-  \item \textbf{Historiques incomplets :} les jours manquants ne sont jamais complétés. Ils coupent les épisodes (F2),
-    rendent un mois inéligible sous 80\,\% de jours valides (F3) et sont pris en compte dans la part de mailles
-    qui rapportent (F4).
-  \item \textbf{Doublons :} l'identité d'une observation est (station, élément, date) ; c'est la clé primaire,
-    un doublon est donc impossible.
-  \item \textbf{Unités :} valeurs stockées en entiers bruts NOAA (dixièmes de °C ou de mm), convertis à l'affichage seulement.
-\end{itemize}
+\paragraph{Traitement des données.} Une observation dont le \cmd{qflag} n'est pas vide est stockée et comptée.
+Nous l'excluons cependant de tous les calculs. Cela concerne 1\,403 lignes sur 1991--2024.
+
+Une pluie marquée T (trace) est valide. Nous la comptons 0~mm et à part. Notre extrait en contient 267 sur
+1991--2024, toutes en Espagne. Une trace est une vraie observation d'une pluie négligeable. Une pluie marquée P
+(manquante, présumée nulle) est traitée comme manquante, jamais comme un zéro mesuré. Notre extrait n'en contient
+aucune, mais la règle est implémentée. Les pluies marquées B ou D sont des cumuls de 2 ou 4 relevés partiels.
+Ce sont de vraies mesures, et nous les gardons telles quelles.
+
+Nous gardons aussi les valeurs inhabituelles sans \cmd{qflag}. Par exemple, SP000007038 enregistre 203,7~mm
+le 13/09/2019, lors d'un épisode méditerranéen réel. Seule la NOAA invalide une valeur.
+
+Nous ne complétons jamais les jours manquants. Un jour manquant coupe un épisode de F2. Pour F3, un mois devient
+inéligible s'il a moins de 80\,\% de jours valides. Pour F4, les jours manquants sont pris en compte dans la part
+de mailles qui rapportent.
+
+Une observation est identifiée par le triplet (station, élément, date), qui est la clé primaire. Un doublon est
+donc impossible. Les valeurs sont stockées en entiers bruts NOAA, en dixièmes de °C ou de mm. Elles ne sont
+converties qu'à l'affichage.
 
 \paragraph{Heure d'observation.} Le champ \cmd{OBS-TIME} est vide pour 100\,\% de nos lignes et 98\,\% des
 valeurs proviennent de l'ECA\&D (\cmd{sflag} E), qui agrège des réseaux nationaux dont la « journée » de mesure
@@ -129,50 +139,61 @@ Chaque résultat contient un champ \cmd{sources} que la commande \cmd{trace} tra
 d'origine (station, date, élément, valeur, flags, lot). L'option \cmd{-{}-json} donne le résultat complet
 en ordre canonique.
 
-\begin{description}
-  \item[F1 -- Explorer une station.] Entrées : zone ou rectangle, nom ; puis station et intervalle.
-    Sortie : par élément et par mois, jours attendus, présents, valides, invalides, traces, disponibilité,
-    moyenne (températures) ou cumul (pluie), min, max.
-    \emph{Exemple :} Madrid Retiro (SP000003195), juillet 2022 : TMAX moyenne 36,78~°C (max 40,7~°C),
-    29 jours valides sur 31 (disponibilité 0,94).
+\paragraph{F1 -- Explorer une station.} L'utilisateur cherche d'abord des stations par zone ou par rectangle,
+et par nom. Il choisit ensuite une station et un intervalle de dates. Le service renvoie, par élément et par mois,
+les jours attendus, présents, valides et invalides, les traces et la disponibilité. Il donne aussi la moyenne pour
+les températures ou le cumul pour la pluie, ainsi que le minimum et le maximum. Pour Madrid Retiro (SP000003195)
+en juillet 2022, la moyenne de TMAX est de 36,78~°C et le maximum de 40,7~°C. 29 jours sur 31 sont valides,
+soit une disponibilité de 0,94.
 
-  \item[F2 -- Épisodes prolongés.] Entrées : zone, période, élément, seuil, durée minimale.
-    Un jour compte s'il a une valeur valide $\ge$ seuil ; un épisode est une suite maximale de dates consécutives
-    qui comptent. Un jour absent ou invalide coupe l'épisode ; les dates étant continues, un épisode du 30 décembre
-    au 2 janvier reste un seul épisode. Sortie : station, début, fin, durée, dépassement moyen, maximum.
-    \emph{Exemple :} Espagne 2015--2024, TMAX $\ge$ 40~°C pendant 3 jours ou plus : 220 épisodes ; le plus long à
-    SPE00120503, du 7 au 17 juillet 2022 (11 jours, max 45,2~°C). Pour PRCP $\ge$ 5~mm pendant 3 jours en Allemagne, 114 épisodes
-    chevauchent le Nouvel An et sont bien comptés une seule fois.
+\paragraph{F2 -- Épisodes prolongés.} L'utilisateur fournit une zone, une période, un élément, un seuil et une
+durée minimale. Un jour compte s'il a une valeur valide supérieure ou égale au seuil. Un épisode est une suite
+maximale de dates consécutives qui comptent. Un jour absent ou invalide coupe l'épisode. Comme les dates sont
+continues, un épisode du 30 décembre au 2 janvier reste un seul épisode. Le service renvoie pour chaque épisode
+la station, le début, la fin, la durée, le dépassement moyen et le maximum. En Espagne, sur 2015--2024, TMAX
+dépasse ou atteint 40~°C pendant 3 jours ou plus lors de 220 épisodes. Le plus long a lieu à SPE00120503, du 7
+au 17 juillet 2022 : il dure 11 jours, avec un maximum de 45,2~°C. Pour PRCP $\ge$ 5~mm pendant 3 jours en
+Allemagne sur 2015--2024, 114 épisodes chevauchent le Nouvel An et sont bien comptés une seule fois.
 
-  \item[F3 -- Mois anormaux.] Entrées : zones, années, élément. Référence : 1991--2020 (30 ans).
-    Un mois-station est éligible s'il a au moins 80\,\% de jours valides ; une normale station $\times$ mois exige
-    au moins 24 années éligibles sur 30. L'anomalie d'une zone est la moyenne des anomalies par maille de 0,5°,
-    puis la moyenne des mailles, pour ne pas surpondérer les régions denses ; le nombre de mailles et de stations
-    utilisées est renvoyé et un mois doit couvrir au moins 5 mailles. Classement par |anomalie|.
-    \emph{Exemple :} TMAX, 2015--2024 : décembre 2015 en Allemagne (+5,16~°C, 176 mailles, 313 stations),
-    avril 2023 en Espagne (+3,61~°C).
+\paragraph{F3 -- Mois anormaux.} L'utilisateur fournit des zones, des années et un élément. La référence couvre
+1991--2020, soit 30 ans. Un mois-station est éligible s'il a au moins 80\,\% de jours valides. Une normale
+station $\times$ mois exige au moins 24 années éligibles sur 30. Pour calculer l'anomalie d'une zone, nous faisons
+d'abord la moyenne des anomalies dans chaque maille de 0,5°, puis la moyenne des mailles. Ainsi, les régions
+denses ne pèsent pas plus que les autres. Le service renvoie le nombre de mailles et de stations utilisées, et
+un mois doit couvrir au moins 5 mailles. Les mois sont classés par valeur absolue de l'anomalie. Pour TMAX sur
+2015--2024, décembre 2015 en Allemagne atteint +5,16~°C, sur 176 mailles et 313 stations. En Espagne,
+avril 2023 atteint +3,61~°C.
 
-  \item[F4 -- Événements régionaux.] Entrées : zone, période, élément, quantile (95\,\%), seuils de surface.
-    Un jour est inhabituel pour une station si sa valeur dépasse son quantile 95\,\% du même mois sur 1991--2020.
-    Pour tenir compte de la densité, on compte des mailles et non des stations : un jour est régional si au moins
-    3 mailles et 25\,\% des mailles qui rapportent sont touchées ; les jours régionaux consécutifs forment un
-    événement, de sévérité égale à la somme des parts de mailles touchées. Un jour où une seule maille est touchée
-    est un extrême isolé. Preuves : chaque observation inhabituelle avec son seuil.
-    \emph{Exemple :} Allemagne, TMAX, 2015--2024 : 166 événements ; le plus sévère du 1er au 12 novembre 2015
-    (98\,\% des mailles le 8). 185 jours d'extrême isolé, souvent à la Zugspitze (GM000004155, 2\,964~m).
+\paragraph{F4 -- Événements régionaux.} L'utilisateur fournit une zone, une période, un élément, un quantile
+(95\,\%) et des seuils de surface. Un jour est inhabituel pour une station si sa valeur dépasse son quantile
+95\,\% du même mois sur 1991--2020. Pour tenir compte de la densité, nous comptons des mailles et non des
+stations. Un jour est régional si au moins 3 mailles et 25\,\% des mailles qui rapportent sont touchées. Les
+jours régionaux consécutifs forment un événement. Sa sévérité est la somme des parts de mailles touchées. Un
+jour où une seule maille est touchée est un extrême isolé. Le service fournit comme preuve chaque observation
+inhabituelle avec son seuil. En Allemagne, pour TMAX sur 2015--2024, nous trouvons 166 événements. Le plus
+sévère va du 1er au 12 novembre 2015, avec 98\,\% des mailles touchées le 8. Sur la même période, nous comptons
+185 jours d'extrême isolé, souvent à la Zugspitze (GM000004155, 2\,964~m).
 
-  \item[F5 -- Mise à jour.] Entrée : fichiers NOAA réels (\cmd{by\_station} ou \cmd{by\_year}).
-    Identité : (station, élément, date). Politique : une valeur ou un flag différent \emph{écrase} l'ancienne
-    version, qui est \emph{archivée} dans \cmd{observations\_history} avec son lot. Une station allemande ou
-    espagnole inconnue est ajoutée d'après \cmd{ghcnd-stations.txt}, les autres pays sont ignorés ; un lot contenant
-    deux valeurs différentes pour une même observation est refusé. Les agrégats mensuels des mois touchés
-    sont recalculés dans la même transaction.
-    \emph{Exemple :} fichier \cmd{by\_year/2025} complet : 697\,993 lignes importées en 35~s, 18,9~M lignes
-    d'autres pays ignorées ; second import : 0 nouvelle, 0 modifiée. Réimport des 21,46~M lignes : aucun changement.
-\end{description}
+\paragraph{F5 -- Mise à jour.} Le service importe des fichiers NOAA réels, au format \cmd{by\_station} ou
+\cmd{by\_year}. Une observation est identifiée par le triplet (station, élément, date). Quand une valeur ou un
+flag diffère, la nouvelle version \emph{écrase} l'ancienne. L'ancienne version est \emph{archivée} dans
+\cmd{observations\_history} avec son lot. Une station allemande ou espagnole inconnue est ajoutée d'après
+\cmd{ghcnd-stations.txt}. Les stations des autres pays sont ignorées. Un lot qui contient deux valeurs
+différentes pour une même observation est refusé. Les agrégats mensuels des mois touchés sont recalculés dans la
+même transaction. Sur le poste~B, l'import du fichier \cmd{by\_year/2025} complet ajoute 697\,993 lignes en 35~s
+et ignore 18,9~M lignes d'autres pays. Un second import donne 0 nouvelle ligne et 0 ligne modifiée. Le réimport
+des 21,46~M lignes ne change rien.
 
 % ======================================================================================================================
 \section{Partie I -- Prototype local}
+
+\paragraph{Postes de mesure.}\label{sec:postes} Nos mesures viennent de deux machines. Nous ne comparons jamais
+des temps obtenus sur deux machines différentes. Le poste~A (Mamadou) tourne sous Windows~11, avec Docker limité
+à 8 threads et 7,6~Go, et un disque plein à 95\,\%. Il a servi pour E1, les premières mesures de E2 et E3, la
+perte d'une instance et le chargement sur Citus. Le poste~B (Hugo) tourne sous Linux, avec 8 cœurs / 16 threads,
+13~Go de RAM et un SSD NVMe. Il a servi pour la Partie~I, les exemples de F5, et E2, E3 et E4 avec F3 et F4
+corrigés. Sur chaque poste, toutes les instances d'une configuration partagent le processeur, la mémoire et le
+disque. C'est donc un prototype sur une seule machine, pas un cluster.
 
 \paragraph{Technologie.} PostgreSQL 17.2, processus serveur séparé (conteneur Docker, port réseau).
 Nos données sont tabulaires et de forme fixe, et F2--F4 sont des analyses (suites de jours, écarts à une moyenne,
@@ -182,16 +203,14 @@ tourne sur Citus (Partie II), qui distribue PostgreSQL : un seul code pour les d
 garantie de résultats identiques. Nous avons écarté MongoDB (F2--F4 en pipelines d'agrégation longs à écrire en deux jours),
 Cassandra et ClickHouse (jamais pratiqués).
 
-\paragraph{Organisation des données.}
-\begin{itemize}
-  \item \cmd{observations} : une ligne par mesure (station, élément, date, valeur entière, mflag, qflag, sflag, lot),
-    clé primaire (station, élément, date). Ce format reprend exactement celui de la NOAA (chaque mesure a ses flags)
-    et sert d'identité pour F5.
-  \item \cmd{stations} : métadonnées et maille de 0,5° (\cmd{cell\_lat}, \cmd{cell\_lon}) utilisée par F3 et F4.
-  \item \cmd{monthly\_stats} : par station, élément et mois, comptes (lignes, valides, invalides, traces, P),
-    somme, min, max des valeurs valides. Maintenue par F5.
-  \item \cmd{batches}, \cmd{observations\_history}, \cmd{observations\_staging} : provenance, historique et chargement de F5.
-\end{itemize}
+\paragraph{Organisation des données.} La table \cmd{observations} contient une ligne par mesure : station,
+élément, date, valeur entière, mflag, qflag, sflag et lot. Sa clé primaire est (station, élément, date). Ce format
+reprend exactement celui de la NOAA, où chaque mesure a ses propres flags, et il sert d'identité pour F5. La table
+\cmd{stations} contient les métadonnées des stations et leur maille de 0,5° (\cmd{cell\_lat}, \cmd{cell\_lon}),
+utilisée par F3 et F4. La table \cmd{monthly\_stats} contient, par station, élément et mois, les comptes de
+lignes, de valeurs valides, invalides, de traces et de P, ainsi que la somme, le minimum et le maximum des
+valeurs valides. Elle est maintenue par F5. Enfin, \cmd{batches}, \cmd{observations\_history} et
+\cmd{observations\_staging} servent à F5 pour la provenance, l'historique et le chargement.
 
 \paragraph{Accès et mécanismes.}
 F1 et F2 lisent une station ou une zone sur une période : la clé primaire (station, élément, date) est aussi
@@ -201,10 +220,12 @@ F3 ne lit que \cmd{monthly\_stats} (86~Mo au lieu de 2,8~Go). Tous les calculs s
 des \cmd{numeric}, arrondis seulement à la sortie : l'ordre des additions change en distribué et des flottants
 donneraient des résultats légèrement différents. L'import (F5) passe par \cmd{COPY} vers une table de chargement puis
 \cmd{INSERT \ldots{} ON CONFLICT DO UPDATE \ldots{} WHERE} la valeur change, ce qui rend l'import idempotent.
-Taille en base : 2,9~Go (table 1,6~Go, index 1,3~Go). Chargement complet : 19~min.
+La table \cmd{observations} occupe 2,8~Go index compris. Le chargement complet prend 19~min sur le poste~B
+et 77~min sur le poste~A (E1).
 
-\paragraph{Mesures.} \cmd{bench/partie1.py}, base complète, médiane de 5 exécutions après une exécution
-d'échauffement (cache chaud) ; pour chaque comparaison, les deux versions renvoient exactement les mêmes lignes.
+\paragraph{Mesures.} Le script \cmd{bench/partie1.py} mesure les requêtes sur la base complète du poste~B. Nous
+donnons la médiane de 5 exécutions, après une exécution d'échauffement (cache chaud). Dans chaque comparaison,
+les deux versions renvoient exactement les mêmes lignes.
 
 \paragraph{Décision justifiée par une mesure.} F3 (Allemagne et Espagne, TMAX, 2015--2024) prend 0,59~s sur
 \cmd{monthly\_stats} contre 5,81~s en recalculant les mois depuis \cmd{observations} : les agrégats mensuels,
@@ -248,40 +269,44 @@ seule la variable \cmd{DATABASE\_URL} change.
 \cmd{observations\_history}, \cmd{observations\_staging} et \cmd{monthly\_stats} sont réparties de la même façon et
 \emph{colocalisées} : les mêmes stations sont sur le même worker pour toutes ces tables. \cmd{stations} et
 \cmd{batches} (774 lignes de métadonnées, pas des observations) sont des tables de référence copiées sur chaque worker.
-Pourquoi la station : toutes les mesures d'une station sont au même endroit, donc F1 ne contacte qu'un worker,
-les épisodes de F2 (fenêtres découpées par station) et F5 se calculent entièrement sur chaque worker.
-Écartés : la date (F1 et F2 toucheraient tous les workers et F2 devrait recoller des épisodes coupés) et le pays
-(2 valeurs seulement, très déséquilibré).
+Nous avons choisi la station comme clé de distribution, car toutes les mesures d'une station se trouvent alors
+au même endroit. F1 ne contacte donc qu'un worker. Les épisodes de F2, calculés par des fenêtres découpées par
+station, et F5 se calculent entièrement sur chaque worker. Nous avons écarté la date : F1 et F2 toucheraient
+tous les workers, et F2 devrait recoller des épisodes coupés. Nous avons aussi écarté le pays, qui n'a que
+2 valeurs et donnerait une répartition très déséquilibrée.
 
-\paragraph{Équilibre.} Avec 2 workers (poste B) : 1\,398~Mo de mesures sur w1 et 1\,721~Mo sur w2 (+23\,\%), pour 16 shards
-chacun : le hachage répartit les stations, pas les volumes, et les séries n'ont pas toutes la même longueur.
-Avec 3 workers, le rééquilibrage déplace des shards entiers : 950, 1\,045 et 850~Mo (12, 11 et 9 shards).
-Sur le poste A, avec les mêmes données : 1\,196 / 1\,457~Mo, puis 823 / 894 / 851~Mo ; \cmd{citus\_shards}
-mesure l'occupation physique (table, index, lignes mortes), pas seulement le volume de données.
-Effet sur les écritures (non mesuré) : un lot \cmd{by\_station} n'écrit que sur le worker de la station, un lot
-\cmd{by\_year} sur tous les workers ; une nouvelle station écrit dans \cmd{stations}, table de référence copiée sur
-chaque nœud ; la colocalisation garde F5 (chargement, historique, \cmd{monthly\_stats}) local à chaque worker.
-Le passage à 3 workers bloque les écritures pendant le rééquilibrage (\cmd{block\_writes}). Le chargement complet
-sur Citus (environ 30~min, poste A) n'est pas comparable au local : il a tourné en même temps qu'une autre charge.
+\paragraph{Équilibre.} Sur le poste~B, avec 2 workers, w1 porte 1\,398~Mo de mesures et w2 1\,721~Mo, soit
+23\,\% de plus, alors que chacun a 16 shards. Le hachage répartit les stations, pas les volumes, et les séries
+n'ont pas toutes la même longueur. Avec 3 workers, le rééquilibrage déplace des shards entiers : les workers
+portent alors 950, 1\,045 et 850~Mo (12, 11 et 9 shards). Sur le poste~A, avec les mêmes données, nous mesurons
+1\,196 et 1\,457~Mo, puis 823, 894 et 851~Mo. \cmd{citus\_shards} mesure l'occupation physique (table, index,
+lignes mortes), et pas seulement le volume de données.
 
-\paragraph{Instances contactées et combinaison.} Sur la base complète, \cmd{-{}-explain} montre :
-\begin{itemize}
-  \item F1 : \cmd{Task Count: 1}, un seul worker, parcours de l'index de la clé primaire ;
-  \item F2 : 32 tâches ; chaque worker calcule les épisodes complets de ses stations, le coordinateur les concatène ;
-  \item F3 : 32 tâches ; mois éligibles, normale et écart de chaque station sont calculés sur son worker,
-    le coordinateur ne fait que les moyennes par maille puis par zone (2,4~Mo reçus) ;
-  \item F4 : les seuils sont calculés sur les workers (une ligne par station et par mois revient) ; puis chaque
-    worker renvoie ses comptes par jour et par maille (17~Mo), que le coordinateur fusionne, car les stations
-    d'une même maille sont réparties sur plusieurs workers.
-\end{itemize}
+Nous n'avons pas mesuré l'effet du placement sur les écritures. Un lot \cmd{by\_station} n'écrit que sur le
+worker de sa station, alors qu'un lot \cmd{by\_year} écrit sur tous les workers. Une nouvelle station écrit dans
+\cmd{stations}, une table de référence copiée sur chaque nœud. La colocalisation garde F5 local à chaque worker,
+pour le chargement, l'historique et \cmd{monthly\_stats}. Le passage à 3 workers bloque les écritures pendant le
+rééquilibrage (\cmd{block\_writes}). Le chargement complet sur Citus a pris environ 30~min sur le poste~A. Cette
+durée n'est pas comparable au local, car le chargement a tourné en même temps qu'une autre charge.
 
-\paragraph{Problème trouvé et corrigé (D27).} Les premières mesures (poste A, voir section~\ref{sec:exp}) donnaient
-sur Citus-2 F3 en 63~s contre 1,5~s en local, et F4 en 106~s contre 26~s. Dans F3, les mois éligibles servaient deux
-fois (normales et écarts) : Citus les calculait sur les workers, mais rapatriait les 18~Mo de lignes mensuelles sur le
-coordinateur, qui les écrivait sur son disque puis calculait seul les normales et la jointure. Dans F4, les seuils
-(quantiles de 30 ans de mesures) étaient calculés deux fois par requête. Correction : dans F3, la normale de chaque
-station est une fonction de fenêtre découpée par station, donc calculée sur les workers ; dans F4, une requête
-calcule les seuils une fois et les passe aux deux suivantes. Les sorties sont identiques avant et après.
+\paragraph{Instances contactées et combinaison.} Sur la base complète, l'option \cmd{-{}-explain} montre le
+plan de chaque service. F1 donne \cmd{Task Count: 1} : un seul worker est contacté, et il parcourt l'index de la
+clé primaire. F2 lance 32 tâches. Chaque worker calcule les épisodes complets de ses stations, et le
+coordinateur les concatène. F3 lance aussi 32 tâches. Les mois éligibles, la normale et l'écart de chaque station
+sont calculés sur son worker. Le coordinateur ne fait que les moyennes par maille, puis par zone, et reçoit
+2,4~Mo. Pour F4, les seuils sont calculés sur les workers, qui renvoient une ligne par station et par mois.
+Chaque worker renvoie ensuite ses comptes par jour et par maille (17~Mo), que le coordinateur fusionne. Cette
+fusion est nécessaire, car les stations d'une même maille sont réparties sur plusieurs workers.
+
+\paragraph{Problème trouvé et corrigé.} Sur le poste~A, les premières mesures donnaient F3 en 63~s sur Citus-2
+contre 1,5~s en local, et F4 en 106~s contre 26~s. Les plans d'exécution montrent la cause. Dans F3, les mois
+éligibles servaient deux fois, pour les normales et pour les écarts ; Citus rapatriait alors 18~Mo de lignes
+mensuelles sur le coordinateur, qui les écrivait sur son disque et calculait seul les normales. Nous calculons
+maintenant la normale de chaque station par une fonction de fenêtre découpée par station, donc sur son worker.
+Sur le poste~B, ce changement fait passer F3 sur Citus-2 de 1,2~s à 0,3~s : les 63~s du poste~A tenaient donc
+surtout à ce poste (disque presque plein, mémoire limitée), même si nous ne l'avons pas mesuré en détail.
+Dans F4, les seuils étaient calculés deux fois par requête ; ce cas est traité en E4. Les sorties sont
+identiques avant et après la correction.
 
 \paragraph{Résultats identiques.} Toutes les sorties \cmd{-{}-json} sont en ordre canonique (égalités départagées
 par station, date ou zone). Sur la base complète (poste A), \cmd{tests/test\_local\_vs\_citus.py} compare 14 cas (F1 sur des
@@ -289,7 +314,7 @@ stations de chaque worker, F2 dont un épisode à cheval sur deux années, F3, F
 tous identiques. Les empreintes SHA-256 des 6 requêtes d'E2 sont les mêmes en local, sur Citus-2 et sur Citus-3.
 
 \paragraph{Perte d'une instance.} Les shards ne sont pas répliqués. Worker w2 arrêté (\cmd{bench/panne.py},
-poste A, base complète, F3 d'avant la correction D27) : F1 sur une station de w2 et F3 échouent ; l'interface affiche « ÉCHEC : la base ou une de ses
+poste~A, base complète, F3 d'avant la correction décrite plus haut) : F1 sur une station de w2 et F3 échouent ; l'interface affiche « ÉCHEC : la base ou une de ses
 instances est indisponible \ldots{} connection to the remote node \ldots{} Aucun résultat partiel n'est affiché »
 (code 2). F1 sur une station de w1 répond normalement. Après redémarrage de w2, F1 et F3 donnent les mêmes sorties
 qu'avant la panne. Rien n'est récupéré pendant la panne : un système en production répliquerait chaque shard pour
@@ -298,13 +323,8 @@ continuer à répondre, ce que notre déploiement sur un seul poste ne fait pas.
 % ======================================================================================================================
 \section{Expériences}\label{sec:exp}
 
-Deux postes, jamais comparés entre eux :
-\begin{itemize}
-  \item \textbf{poste A} (E1, premières mesures) : Windows 11, Docker limité à 8 threads et 7,6~Go, disque plein à 95\,\% ;
-  \item \textbf{poste B} (E2 et E3 avec F3 et F4 corrigés) : Linux, 8 cœurs / 16 threads, 13~Go de RAM, SSD NVMe.
-\end{itemize}
-PostgreSQL 17.2 (local : \cmd{shared\_buffers} 2~Go, 2 processus parallèles par requête), Citus 13.0.
-Toutes les instances d'une configuration partagent le processeur, la mémoire et le disque du poste.
+Les postes A et B sont décrits en section~\ref{sec:postes}. Réglages : PostgreSQL 17.2 en local
+(\cmd{shared\_buffers} 2~Go, 2 processus parallèles par requête), Citus 13.0.
 Protocole : une exécution d'échauffement (sa durée est notée), puis des exécutions chronométrées : 5 pour E1 ;
 pour E2, 7 en local et sur Citus-2, 5 sur Citus-3, 3 pour F4 ; on donne la médiane. Résultats bruts : \cmd{bench/results/}.
 
@@ -327,9 +347,10 @@ F3 : deux pays, TMAX & 0,09~s & 0,40~s & 1,32~s \\
 \end{table}
 F1 ne dépend pas du volume (index sur la station). F3 lit les agrégats mensuels et reste court. Les requêtes qui
 parcourent les mesures journalières croissent plus vite que les données entre 25 et 100\,\% (×9 et ×17 pour ×3,8
-de données). À 100\,\%, la base (2,5~Go) dépasse les 2~Go de \cmd{shared\_buffers} mais tient dans les 7,6~Go de
-Docker (cache du système) ; le taux de cache n'a pas pu être mesuré (\cmd{cache\_hit\_ratio} vide dans \cmd{e1.json}),
-la cause de cette croissance reste donc une hypothèse. L'import tient environ 4\,600 lignes/s au-delà de 10\,\% ;
+de données). À 100\,\%, la base (2,5~Go) dépasse les 2~Go de \cmd{shared\_buffers}. Elle pourrait tenir dans le
+cache du système (Docker dispose de 7,6~Go), mais nous n'avons pas pu le vérifier : le taux de cache n'a pas été
+enregistré (\cmd{cache\_hit\_ratio} vide dans \cmd{e1.json}). Une partie des lectures sur le disque reste donc
+l'explication la plus probable de cette croissance, sans preuve. L'import tient environ 4\,600 lignes/s au-delà de 10\,\% ;
 à 100\,\%, sa durée (4\,602~s) est celle du chargement initial mesuré seul, pas de \cmd{bench/e1.py}.
 
 \paragraph{E2 -- Local contre distribué (poste B, base complète).}
@@ -348,20 +369,26 @@ F4 : Espagne, PRCP, 10 ans & 2,42 (7,8) & 3,51 (152,1) & 3,04 (5,1) \\
 \bottomrule
 \end{tabular}
 \end{table}
-Sur ce poste, toute la base tient en mémoire : le distribué n'apporte presque rien. F1 paie le passage par le
-coordinateur (+1 à 2~ms). Les requêtes lourdes sont à égalité, avec un léger gain pour 3 workers (F2 Allemagne
-$-$20\,\%). Les requêtes courtes sur une zone perdent : F2 Espagne lance 32 tâches pour peu de lignes, F4 fusionne
-17~Mo sur le coordinateur. Sur le poste A, avant correction, Citus-2 était au contraire 4 fois plus rapide pour F2
-Allemagne (2,4~s contre 10,0~s) et 2,6 fois pour l'agrégation longue : là, le local lisait sur le disque, et
-répartir les lectures sur deux instances aidait.
+Sur le poste~B, la base reste dans le cache : la première exécution est aussi rapide que les suivantes
+(F2 Espagne en local : 0,135~s, puis 0,132~s de médiane). Dans ces conditions, le distribué n'apporte presque rien.
+F1 paie le passage par le coordinateur (1 à 2~ms de plus). Les requêtes lourdes sont à égalité, avec un léger
+gain pour 3 workers (F2 Allemagne : $-20$\,\%). Les requêtes plus courtes sur une zone perdent : F2 Espagne lance
+32 tâches pour peu de lignes, et F4 fusionne 17~Mo sur le coordinateur.
+Sur le poste~A, c'était l'inverse : Citus-2 était 4 fois plus rapide pour F2 Allemagne (2,4~s contre 10,0~s) et
+2,6 fois pour l'agrégation longue. Ces deux requêtes n'ont pas été modifiées par la correction. Notre hypothèse est
+que le local lisait sur le disque : F2 Espagne y prenait 5,7~s à la première exécution et 0,32~s ensuite, et la
+même requête F2 Allemagne prenait 7,5~s dans E1 et 10,0~s dans E2. Les conteneurs Citus étaient arrêtés pendant
+les mesures locales, donc ils ne prenaient pas de mémoire au local. Le taux de cache n'ayant pas été mesuré, nous
+ne pouvons pas prouver cette hypothèse.
 
-\paragraph{E3 -- Charge variable (poste B).} Prédiction écrite avant les mesures (\cmd{docs/e3\_prediction.md},
-commitée le 8 novembre à 14~h~52 ; première mesure à 19~h~42) :
-le local l'emporte sur la routine (F1, surcoût du coordinateur) ; Citus-2 l'emporte sur les études régionales
-(F2 et F3 sur un pays) grâce au parallélisme de F2 ; le basculement se fait vers 1 à 5\,\% de requêtes régionales.
-Protocole réduit (le budget de temps a été fixé quand F3 prenait 63~s) : séries de 20 requêtes tirées avec une
-graine fixe, 3 répétitions, 0, 5, 25, 50 et 100\,\% de requêtes régionales ; le point à 1\,\% n'a pas été mesuré,
-alors que la prédiction situait le basculement entre 1 et 5\,\%.
+\paragraph{E3 -- Charge variable (poste~B).} Nous avons écrit la prédiction avant toute mesure
+(\cmd{docs/e3\_prediction.md}, versionnée dans Git le 8 novembre à 14~h~52 ; première mesure à 19~h~42).
+Elle a été rédigée pour le poste~B, dont elle décrit le matériel. Nous prévoyions que le local gagnerait sur la
+routine, à cause du surcoût du coordinateur pour F1 ; que Citus-2 gagnerait sur les études régionales (F2 et F3 sur
+un pays), grâce au parallélisme de F2 ; et que le basculement se produirait entre 1 et 5\,\% de requêtes régionales.
+Le protocole a dû être réduit, car le budget de temps avait été fixé quand F3 prenait 63~s : séries de 20 requêtes
+tirées avec une graine fixe au lieu de 200, 3 répétitions au lieu de 5, et des parts de 0, 5, 25, 50 et 100\,\%.
+Le point à 1\,\% n'a donc pas été mesuré, alors que la prédiction y plaçait le début du basculement.
 \begin{table}[H]
 \centering\small
 \begin{tabular}{lrrrrr}
@@ -376,20 +403,30 @@ Citus-2 / local & 1,6 & 1,2 & 1,3 & 1,7 & 1,8 \\
 \bottomrule
 \end{tabular}
 \end{table}
-La première partie de la prédiction est confirmée (routine : Citus-2 1,6 fois plus lent). Les deux autres sont
-fausses : le local gagne à toutes les parts, et il n'y a pas de basculement. Raison : la prédiction supposait F2
-limité par les 3 processus du local et accéléré par les 32 tâches de Citus ; or, base en mémoire, F2 Allemagne ne
-prend que 0,6~s en local, et la moitié des requêtes régionales (F2 Espagne, F3 sur un seul pays) sont courtes, donc
-dominées par le coût fixe de 32 tâches. Sur le poste A, avec l'ancien F3, Citus-2 ne gagnait qu'à 5\,\% et perdait
-au-delà (jusqu'à 30 fois plus lent à 100\,\%) à cause des 63~s de F3 ; mais la série à 5\,\% ne contient qu'une
-requête régionale (F2 Allemagne) et la dispersion du poste A est forte (IQR de 7,56~s pour une médiane de 2,22~s sur
-Citus-2 à 5\,\%, de 13,23~s pour 23,84~s en local à 25\,\%) : ce point ne permet pas de conclure à un basculement.
-Le gain du distribué dépend donc surtout de
-ce qui limite le local : la mémoire et le disque sur le poste A, rien sur le poste B.
+La première partie de la prédiction est confirmée : sur la routine, Citus-2 est 1,6 fois plus lent, dans la
+fourchette prévue (1,3 à 2). Les deux autres sont fausses : le local gagne à toutes les parts, et il n'y a pas de
+basculement. Nous pensions que F2 était limité, en local, par ses 3 processus, et que les 32 tâches de Citus le
+rendraient plus rapide. Mais quand la base est en mémoire, F2 Allemagne ne prend que 0,6~s en local. De plus, la
+moitié des requêtes régionales (F2 Espagne, F3 sur un seul pays) sont courtes, et leur temps est dominé par le
+coût fixe des 32 tâches. Notre prédiction citait bien la mémoire comme risque, mais dans l'autre sens : nous
+craignions que les données ne tiennent pas en cache, alors que c'est justement parce qu'elles y tiennent que le
+parallélisme de Citus ne sert à rien.
+Sur le poste~A, avec l'ancien F3, Citus-2 ne gagnait qu'à 5\,\% et perdait au-delà (jusqu'à 30 fois plus lent à
+100\,\%) à cause des 63~s de F3. Mais la série à 5\,\% ne contient qu'une requête régionale, et la dispersion y est
+très forte (écart interquartile de 7,56~s pour une médiane de 2,22~s) : ce point ne permet pas de conclure à un
+basculement. Le gain du distribué dépend donc de ce qui limite le local : la mémoire et le disque sur le poste~A,
+ni l'un ni l'autre sur le poste~B.
 
-\paragraph{E4 -- Limite (bonus).} F4 recalculait les seuils (quantiles de 30 ans de mesures) deux fois par requête :
-22,6~s pour l'Allemagne en local. Les calculer une fois ramène F4 à 7,5~s (D27). Une table de seuils tenue à jour
-par F5 supprimerait ce calcul, au prix d'écritures en plus à chaque import.
+\paragraph{E4 -- Limite (bonus, poste~B).} F4 compare chaque jour au quantile 95\,\% de la même station et du même
+mois sur 1991--2020. Avec 774 stations, 12 mois et 30 ans de mesures, ce calcul de quantiles domine la requête,
+et notre première version le faisait deux fois (une fois pour les comptes par jour, une fois pour les preuves) :
+F4 sur l'Allemagne prenait 22,6~s en local. En calculant les seuils une seule fois et en les passant aux deux
+requêtes suivantes, F4 descend à 7,5~s en local et de 7,8 à 6,3~s sur Citus-2, avec les mêmes sorties. Une table
+de seuils tenue à jour par F5 supprimerait ce calcul, au prix d'écritures supplémentaires à chaque import ; nous
+ne l'avons pas implémentée. Une seconde limite reste ouverte : la distribution par station disperse les stations
+d'une même maille entre les workers, si bien que F4 doit fusionner 17~Mo sur le coordinateur et reste 1,45 fois
+plus lent sur Citus-2 qu'en local (3,51~s contre 2,42~s). Distribuer par maille réglerait ce point, mais
+déséquilibrerait les workers (213 mailles en Allemagne contre 94 en Espagne, de densités très différentes).
 
 % ======================================================================================================================
 \section{Vérification indépendante}
@@ -405,15 +442,13 @@ loin de zéro (13,13) ; les deux côtés arrondissent désormais comme PostgreSQ
 % ======================================================================================================================
 \section{Limites}
 
-\begin{itemize}
-  \item Heure d'observation inconnue : comparaisons entre stations au jour près approximatives (section 2).
-  \item F4 utilise un seuil fixe (quantile 95\,\%) et des mailles de 0,5° : un relief marqué (Zugspitze) produit
-    des extrêmes isolés qui sont réels mais peu représentatifs de la région.
-  \item Les normales exigent 24 années sur 30 : les stations récentes ne participent pas à F3 et F4.
-  \item 9 stations espagnoles ont une longitude de signe inversé dans les métadonnées NOAA (annexe~\ref{ann:anomalies}) :
-    elles sont rangées dans une mauvaise maille pour F3 et F4. Nous ne corrigeons pas les métadonnées sources.
-  \item Le distribué tourne sur un seul poste, sans réplication.
-\end{itemize}
+L'heure d'observation n'est pas connue. Les comparaisons entre stations au jour près sont donc approximatives
+(section~2). F4 utilise un seuil fixe (quantile 95\,\%) et des mailles de 0,5°. Un relief marqué, comme la
+Zugspitze, produit ainsi des extrêmes isolés réels mais peu représentatifs de la région. Les normales exigent
+24 années sur 30, si bien que les stations récentes ne participent pas à F3 et F4. Dans les métadonnées NOAA,
+9 stations espagnoles ont une longitude de signe inversé (annexe~\ref{ann:anomalies}). Elles sont rangées dans
+une mauvaise maille pour F3 et F4, car nous ne corrigeons pas les métadonnées sources. Enfin, le prototype
+distribué tourne sur un seul poste, sans réplication.
 
 % ======================================================================================================================
 \appendix
