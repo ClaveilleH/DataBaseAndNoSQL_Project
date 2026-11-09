@@ -31,7 +31,7 @@
   }
 }
 
-% -------------------- Pied de page : auteur | titre | n° --------------------
+% -------------------- Pied de page : auteur | titre et section en cours | n° --------------------
 \setbeamercolor{author in head/foot}{fg=white,bg=accent}
 \setbeamercolor{title in head/foot}{fg=white,bg=accent}
 \setbeamercolor{page in head/foot}{fg=white,bg=accent}
@@ -42,7 +42,8 @@
       \hspace{1ex}\insertshortauthor
     \end{beamercolorbox}%
     \begin{beamercolorbox}[wd=0.34\paperwidth,ht=2.5ex,dp=1ex,center]{title in head/foot}%
-      \insertshorttitle
+      \hypersetup{linkcolor=white}% titre et section sont des liens : sinon bleu sur bleu
+      \insertshorttitle\ifx\insertsectionhead\@empty\else{} -- \insertsectionhead\fi
     \end{beamercolorbox}%
     \begin{beamercolorbox}[wd=0.33\paperwidth,ht=2.5ex,dp=1ex,right]{page in head/foot}%
       \insertframenumber{} / \inserttotalframenumber\hspace{1ex}

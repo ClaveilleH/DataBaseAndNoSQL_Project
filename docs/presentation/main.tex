@@ -101,7 +101,7 @@
       \begin{block}{Écartés}
         \small
         \begin{itemize}
-          \item \textbf{MongoDB :} F2--F4 en longs pipelines d'agrégation, trop risqué dans le délai
+          \item \textbf{MongoDB :} F2--F4 en longs pipelines d'agrégation
           \item \textbf{Cassandra, ClickHouse :} jamais pratiqués
         \end{itemize}
       \end{block}
@@ -310,33 +310,33 @@ WHERE (observations.value, ...)
   \end{columns}
 \end{frame}
 
-\begin{frame}{Problème trouvé en distribué, et corrigé}
-  \small
-  \begin{columns}[T]
-    \begin{column}{0.48\textwidth}
-      \setbeamercolor{block title}{fg=white,bg=red!80!black}
-      \begin{block}{Premières mesures (poste A)}
-        F3 : 63 s sur Citus contre 1,5 s en local\\
-        F4 : 106 s contre 26 s
-        \begin{itemize}
-          \item F3 : 18 Mo de lignes mensuelles rapatriés sur le coordinateur, qui calculait seul normales et jointure
-          \item F4 : seuils (quantiles de 30 ans) calculés deux fois par requête
-        \end{itemize}
-      \end{block}
-    \end{column}
-    \begin{column}{0.48\textwidth}
-      \setbeamercolor{block title}{fg=white,bg=green}
-      \begin{block}{Correction (D27)}
-        \begin{itemize}
-          \item F3 : normale par fenêtre \code{PARTITION BY station}, donc sur les workers ; 2,4 Mo reçus
-          \item F4 : seuils calculés une fois, sur les workers, puis passés aux requêtes suivantes
-        \end{itemize}
-        F4 Allemagne : 22,6 s $\rightarrow$ 7,5 s en local\\
-        Sorties \textbf{identiques} avant et après
-      \end{block}
-    \end{column}
-  \end{columns}
-\end{frame}
+% \begin{frame}{Problème trouvé en distribué, et corrigé}
+%   \small
+%   \begin{columns}[T]
+%     \begin{column}{0.48\textwidth}
+%       \setbeamercolor{block title}{fg=white,bg=red!80!black}
+%       \begin{block}{Premières mesures (poste A)}
+%         F3 : 63 s sur Citus contre 1,5 s en local\\
+%         F4 : 106 s contre 26 s
+%         \begin{itemize}
+%           \item F3 : 18 Mo de lignes mensuelles rapatriés sur le coordinateur, qui calculait seul normales et jointure
+%           \item F4 : seuils (quantiles de 30 ans) calculés deux fois par requête
+%         \end{itemize}
+%       \end{block}
+%     \end{column}
+%     \begin{column}{0.48\textwidth}
+%       \setbeamercolor{block title}{fg=white,bg=green}
+%       \begin{block}{Correction (D27)}
+%         \begin{itemize}
+%           \item F3 : normale par fenêtre \code{PARTITION BY station}, donc sur les workers ; 2,4 Mo reçus
+%           \item F4 : seuils calculés une fois, sur les workers, puis passés aux requêtes suivantes
+%         \end{itemize}
+%         F4 Allemagne : 22,6 s $\rightarrow$ 7,5 s en local\\
+%         Sorties \textbf{identiques} avant et après
+%       \end{block}
+%     \end{column}
+%   \end{columns}
+% \end{frame}
 
 \begin{frame}{Résultats identiques, équilibre et panne}
   \small
@@ -358,7 +358,7 @@ WHERE (observations.value, ...)
 \begin{frame}{Deux postes, jamais comparés entre eux}
   \begin{itemize}
     \item \textbf{Poste A} (E1, premières mesures) : Windows, Docker 8 threads et 7,6 Go, disque plein à 95\,\%
-    \item \textbf{Poste B} (E2, E3 avec F3 et F4 corrigés) : Linux, 16 threads, 13 Go, SSD NVMe
+    \item \textbf{Poste B} (Partie I, E2, E3, E4) : Linux, 16 threads, 13 Go, SSD NVMe
   \end{itemize}
   \vspace{0.5em}
   \small Local : \code{shared\_buffers} 2 Go ; Citus : même budget total réparti entre les workers.
