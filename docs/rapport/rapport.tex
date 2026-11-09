@@ -39,7 +39,8 @@
         {\Large BigData \& noSQL}\\[1cm]
         \vspace{1cm}
         \textbf{Hugo CLAVEILLE\\ JULES Stevenson\\ DIALLO Mamadou Ougailou}\\[0.5cm]
-        {\Large Master 2 SLCD}\\[2cm]
+        {\Large Master 2 SLCD}\\[1cm]
+        {\large Code source : \url{https://github.com/ClaveilleH/DataBaseAndNoSQL_Project}}\\[1cm]
         \vfill
         {\large 8 novembre 2026}
     \end{center}
@@ -175,7 +176,8 @@ en ordre canonique.
 
 \paragraph{Technologie.} PostgreSQL 17.2, processus serveur séparé (conteneur Docker, port réseau).
 Nos données sont tabulaires et de forme fixe, et F2--F4 sont des analyses (suites de jours, écarts à une moyenne,
-croisement de stations aux mêmes dates) que les fonctions de fenêtre SQL expriment directement. Surtout, le même SQL
+croisement de stations aux mêmes dates) que SQL exprime directement : fonctions de fenêtre pour F2 et F3, agrégats
+par jour et par maille pour F4. Surtout, le même SQL
 tourne sur Citus (Partie II), qui distribue PostgreSQL : un seul code pour les deux prototypes, ce qui facilite la
 garantie de résultats identiques. Nous avons écarté MongoDB (F2--F4 en pipelines d'agrégation longs à écrire en deux jours),
 Cassandra et ClickHouse (jamais pratiqués).

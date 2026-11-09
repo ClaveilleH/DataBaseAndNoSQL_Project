@@ -133,7 +133,7 @@ bash deploy/citus/add_worker.sh                      # (Citus-3) ajoute w3 et r�
 ```bash
 uv run pytest tests/test_local_vs_citus.py -v        # local contre Citus : mêmes résultats (les deux bases chargées et démarrées)
 uv run python -m bench.panne                         # perte d'une instance (F1 puis F3), message de l'interface
-uv run python -m bench.e1                            # E1 : volume croissant (25, 50, 100 % des stations), local
+uv run python -m bench.e1                            # E1 : volume croissant (10, 25, 100 % des stations), local
 uv run python -m bench.e2 --config local             # E2 : puis citus2, puis citus3 (dans cet ordre)
 uv run python -m bench.e3 --config local             # E3 : puis citus2 (prédiction : docs/e3_prediction.md)
 uv run python -m bench.report                        # tableaux du rapport à partir de bench/results/*.json
@@ -141,6 +141,9 @@ uv run python -m bench.report                        # tableaux du rapport à pa
 
 Un seul déploiement tourne à la fois : `bench.common.activate` arrête les autres et démarre celui qui est mesuré.
 Les mesures brutes (toutes les durées, versions, paramètres mémoire) sont dans `bench/results/`.
+Les fichiers `*_correctif.json` viennent des mêmes scripts (E2, E3), relancés après la réécriture de F3 et F4 (D27) ;
+ce sont eux que cite le rapport. Les fichiers sans suffixe gardent les mesures d'avant, qui montrent le problème.
+`bench.report` (donc `tableaux.md`) lit les fichiers sans suffixe.
 
 ## Organisation du dépôt
 

@@ -153,7 +153,7 @@ Statuts : **adoptée** (validée par l'équipe), **proposée** (à valider), **r
 - **Décision :** Partie I : un serveur PostgreSQL 17.2. Partie II : Citus 13.0 (PostgreSQL 17.2), un coordinateur et des workers ; la table des observations est distribuée entre les workers.
 - **Pourquoi :**
   - nos données sont tabulaires et de forme fixe (station, date, élément, valeur, trois flags) : la souplesse d'un modèle document n'apporte rien ;
-  - F2–F4 sont des requêtes analytiques : suites de jours consécutifs, écarts à une moyenne de référence, croisement de stations sur les mêmes dates. Les fonctions de fenêtre SQL les expriment en quelques lignes, lisibles et faciles à expliquer en soutenance ;
+  - F2–F4 sont des requêtes analytiques : suites de jours consécutifs, écarts à une moyenne de référence, croisement de stations sur les mêmes dates. SQL les exprime en quelques lignes, lisibles et faciles à expliquer en soutenance (fonctions de fenêtre pour F2 et F3, agrégats par jour et par maille pour F4 ; précisé le 2026-11-09) ;
   - le même SQL tourne en local et en distribué, ce qui facilite la garantie de résultats identiques exigée par la Partie II ;
   - `EXPLAIN` montre quels workers sont contactés et comment les résultats partiels sont combinés ;
   - si un worker est arrêté, une requête qui en a besoin échoue explicitement : le sujet interdit de présenter une réponse partielle comme complète ;
@@ -262,6 +262,7 @@ Statuts : **adoptée** (validée par l'équipe), **proposée** (à valider), **r
 - **Statut :** adoptée, 2026-11-08. Modifie D12.
 - **Décision :** Stevenson et Mamadou ne répondent pas le jour du rendu. Hugo reprend les services F1–F4, l'interface et la traçabilité, en plus des données et de F5. Le prototype distribué (`deploy/citus/`) et les expériences E1–E4 (`bench/`) restent à Stevenson et Mamadou.
 - **Pourquoi :** les services bloquent tout le reste (comparaison local/distribué, mesures, démonstration) ; ils dépendent directement du modèle et des définitions déjà fixés par Hugo.
+- **Complété le 2026-11-09 :** Stevenson et Mamadou ont finalement repris la Partie II le 8 novembre au soir : déploiement Citus, tests local/distribué, panne, mesures E1–E3 (Mamadou) et relecture du rapport (Stevenson). Voir `docs/passation_mesures.md`.
 
 ## D20 — Pluie : traces (T) et manquantes présumées nulles (P)
 
